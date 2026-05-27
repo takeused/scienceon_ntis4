@@ -35,8 +35,13 @@
 
     const NTIS_BASE = 'https://www.ntis.go.kr';
 
-    // 로컬 프록시 전용 (proxy-server.js, 포트 3737)
-    const PROXY_BASE       = 'http://127.0.0.1:3737';
+    // 로컬 프록시 (proxy-server.js, 포트 3737)
+    // 같은 서버에서 HTML을 서빙받은 경우(인트라넷 포함) → 자동으로 해당 호스트 사용
+    const PROXY_BASE = (() => {
+      const { protocol, hostname, port } = window.location;
+      if (port === '3737') return `${protocol}//${hostname}:3737`;   // 프록시에서 직접 서빙
+      return 'http://127.0.0.1:3737';                                 // 로컬 파일로 열었을 때
+    })();
     const API_BASE_DIRECT  = 'https://apigateway.kisti.re.kr/openapicall.do';
     const TOKEN_URL_DIRECT = 'https://apigateway.kisti.re.kr/tokenrequest.do';
 

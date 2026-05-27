@@ -2,11 +2,28 @@
  * ScienceON + NTIS 로컬 프록시 서버
  * 포트: 3737
  * 실행: node proxy-server.js
+ * 접속: http://127.0.0.1:3737  (로컬)
+ *       http://<내PC_IP>:3737  (인트라넷)
  */
-const http  = require('http');
-const https = require('https');
+const http   = require('http');
+const https  = require('https');
 const crypto = require('crypto');
-const url   = require('url');
+const url    = require('url');
+const fs     = require('fs');
+const path   = require('path');
+
+// ── 정적 파일 서빙 (인트라넷 접속용) ────────────────────────────
+const STATIC_ROOT = __dirname;
+const MIME_TYPES  = {
+  '.html': 'text/html; charset=utf-8',
+  '.js':   'application/javascript; charset=utf-8',
+  '.css':  'text/css; charset=utf-8',
+  '.ico':  'image/x-icon',
+  '.png':  'image/png',
+  '.jpg':  'image/jpeg',
+  '.svg':  'image/svg+xml',
+  '.md':   'text/plain; charset=utf-8',
+};
 
 const PORT      = 3737;
 const API_HOST  = 'apigateway.kisti.re.kr';
@@ -106,6 +123,29 @@ const server = http.createServer(async (req, res) => {
     setCORS(res);
     res.writeHead(204);
     res.end();
+    return;
+  }
+
+  // ── 정적 파일 서빙 (/, /index.html, /js/*, /css/*) ──────────
+  const staticExts = ['.html', '.js', '.css', '.ico', '.png', '.jpg', '.svg', '.md'];
+  const isStatic   = pathname === '/' || staticExts.some(e => pathname.endsWith(e));
+  if (isStatic && !pathname.startsWith('/token') && !pathname.startsWith('/api')
+               && !pathname.startsWith('/ntis') && !pathname.startsWith('/health')
+               && !pathname.startsWith('/myip')) {
+    const filePath = path.join(STATIC_ROOT, pathname === '/' ? 'index.html' : pathname);
+    // 경로 탈출 방지 (디렉터리 트래버설)
+    if (!filePath.startsWith(STATIC_ROOT)) {
+      res.writeHead(403); res.end('Forbidden'); return;
+    }
+    try {
+      const data = fs.readFileSync(filePath);
+      const ext  = path.extname(filePath);
+      setCORS(res);
+      res.writeHead(200, { 'Content-Type': MIME_TYPES[ext] || 'application/octet-stream' });
+      res.end(data);
+    } catch {
+      res.writeHead(404); res.end('Not found: ' + pathname);
+    }
     return;
   }
 
@@ -254,12 +294,22 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-server.listen(PORT, '127.0.0.1', () => {
-  console.log(`\n✅ ScienceON 로컬 프록시 서버 시작`);
-  console.log(`   포트: http://127.0.0.1:${PORT}`);
-  console.log(`   /health  /token  /api  /ntis  /ntis/connection`);
-  console.log(`\n   🔔 NTIS 승인 IP: 1.252.84.41 (정박사님 PC)`);
-  console.log(`   브라우저에서 페이지를 새로고침하면 자동으로 로컬 프록시를 사용합니다.\n`);
+server.listen(PORT, '0.0.0.0', () => {
+  // 인트라넷 IP 목록 출력
+  const os = require('os');
+  const nets = os.networkInterfaces();
+  const ips = [];
+  for (const iface of Object.values(nets)) {
+    for (const addr of iface) {
+      if (addr.family === 'IPv4' && !addr.internal) ips.push(addr.address);
+    }
+  }
+  console.log(`\n✅ ScienceON 프록시 서버 시작 (포트 ${PORT})`);
+  console.log(`   로컬:      http://127.0.0.1:${PORT}`);
+  ips.forEach(ip => console.log(`   인트라넷:  http://${ip}:${PORT}  ← 같은 네트워크 PC에서 이 주소로 접속`));
+  console.log(`\n   📂 정적 파일 서빙: http://<IP>:${PORT}/  → index.html 직접 제공`);
+  console.log(`   🔔 NTIS 승인 IP: 1.252.84.41 (정박사님 PC)`);
+  console.log(`   API: /health  /token  /api  /ntis  /ntis/connection\n`);
 });
 
 server.on('error', (err) => {

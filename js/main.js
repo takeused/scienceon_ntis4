@@ -25,10 +25,24 @@
       updateFavCount();
       await checkProxy();
 
-      // 토큰이 없고 자격증명이 있으면 자동 발급 시도
-      if (!STATE.token && STATE.clientId && STATE.apiKey && STATE.macAddr && PROXY_AVAILABLE) {
-        await autoRequestToken();
-      } else if (STATE.token && STATE.tokenExpire) {
+      // 토큰 만료 여부 확인
+      const _expireMs  = STATE.tokenExpire
+        ? new Date(STATE.tokenExpire.replace(' ', 'T')).getTime() : 0;
+      const _isExpired = _expireMs > 0 && _expireMs < Date.now();
+
+      if (!STATE.token || _isExpired) {
+        // ① Refresh Token으로 갱신 시도 (가장 우선)
+        if (STATE.refreshToken && STATE.clientId && PROXY_AVAILABLE) {
+          const ok = await refreshAccessToken();
+          if (!ok && STATE.clientId && STATE.apiKey && STATE.macAddr) {
+            // ② refresh 실패 → 자격증명으로 신규 발급
+            await autoRequestToken();
+          }
+        } else if (STATE.clientId && STATE.apiKey && STATE.macAddr && PROXY_AVAILABLE) {
+          // ③ refresh token 없음 → 자격증명으로 신규 발급
+          await autoRequestToken();
+        }
+      } else if (STATE.token) {
         scheduleTokenRefresh();
         updateTokenExpireDisplay();
       }

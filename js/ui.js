@@ -817,14 +817,24 @@
         }
 
         if (data.access_token) {
-          document.getElementById('tokenInput').value = data.access_token;
-          if (data.refresh_token) document.getElementById('refreshTokenInput').value = data.refresh_token;
-          // 만료 시각을 localStorage에 선저장 (saveSettings 클릭 전에도 스케줄러가 작동하도록)
+          // STATE + localStorage에 즉시 저장 (저장 버튼 없이도 유지)
+          STATE.token = data.access_token;
+          localStorage.setItem('sc_token', STATE.token);
+          if (data.refresh_token) {
+            STATE.refreshToken = data.refresh_token;
+            localStorage.setItem('sc_refresh_token', STATE.refreshToken);
+          }
           const expire = data.access_token_expire || '';
-          localStorage.setItem('sc_token_expire', expire);
           STATE.tokenExpire = expire;
+          localStorage.setItem('sc_token_expire', expire);
+          // 입력 필드도 반영
+          document.getElementById('tokenInput').value = STATE.token;
+          if (data.refresh_token) document.getElementById('refreshTokenInput').value = STATE.refreshToken;
+          scheduleTokenRefresh();
+          updateTokenExpireDisplay();
+          updateProxyStatus();
           resultEl.className = 'token-result-ok';
-          resultEl.textContent = `✅ 토큰 발급 성공! 만료: ${expire || '2시간 후'} ${ACTIVE_PROXY === 'worker' ? '(Worker 경유)' : ACTIVE_PROXY === 'local' ? '(로컬 프록시 경유)' : '(직접)'}`;
+          resultEl.textContent = `✅ 토큰 발급 성공! 만료: ${expire || '2시간 후'} — 자동 저장됨`;
         } else {
           throw new Error(data.error || data.message || JSON.stringify(data));
         }
@@ -882,10 +892,23 @@
         const data = await resp.json();
 
         if (data.success) {
-          document.getElementById('tokenInput').value = data.access_token;
-          if (data.refresh_token) document.getElementById('refreshTokenInput').value = data.refresh_token;
+          // STATE + localStorage에 즉시 저장
+          STATE.token = data.access_token;
+          localStorage.setItem('sc_token', STATE.token);
+          if (data.refresh_token) {
+            STATE.refreshToken = data.refresh_token;
+            localStorage.setItem('sc_refresh_token', STATE.refreshToken);
+          }
+          const expire = data.access_token_expire || '';
+          STATE.tokenExpire = expire;
+          localStorage.setItem('sc_token_expire', expire);
+          document.getElementById('tokenInput').value = STATE.token;
+          if (data.refresh_token) document.getElementById('refreshTokenInput').value = STATE.refreshToken;
+          scheduleTokenRefresh();
+          updateTokenExpireDisplay();
+          updateProxyStatus();
           resultEl.className = 'token-result-ok';
-          resultEl.innerHTML = `탐색 성공!<br>MAC 형식: <strong>${escHtml(data.mac)}</strong><br>암호화: <strong>${escHtml(data.enc)}</strong><br>만료: ${escHtml(data.access_token_expire || '2시간 후')}`;
+          resultEl.innerHTML = `탐색 성공! 자동 저장됨<br>MAC 형식: <strong>${escHtml(data.mac)}</strong><br>암호화: <strong>${escHtml(data.enc)}</strong><br>만료: ${escHtml(expire || '2시간 후')}`;
         } else {
           resultEl.className = 'token-result-err';
           resultEl.innerHTML = `모든 조합 실패 (${data.results?.length || 0}가지 시도)<br>API 포털에서 등록 정보를 다시 확인하세요.`;

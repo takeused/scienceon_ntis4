@@ -168,9 +168,11 @@
       const aiStatus = document.getElementById('cerebrasServerStatus');
       if (aiStatus) {
         if (BROWSER_API_MODE) {
-          aiStatus.textContent = STATE.cerebrasKey
+          aiStatus.textContent = isValidCerebrasKey(STATE.cerebrasKey)
             ? '브라우저 개발 키가 설정되어 있습니다. 배포 전 반드시 제거하세요.'
-            : '브라우저 개발용 Cerebras API 키를 입력하세요.';
+            : STATE.cerebrasKey
+              ? '⚠️ Cerebras API 키 형식이 올바르지 않습니다.'
+              : '브라우저 개발용 Cerebras API 키를 입력하세요.';
         } else {
           aiStatus.textContent = STATE.aiConfigured
             ? '✅ 서버 AI 키가 안전하게 설정되어 있습니다.'
@@ -244,11 +246,19 @@
       document.getElementById('macAddrInput').value = STATE.macAddr;
       document.getElementById('ntisKeyInput').value = STATE.ntisKey;
       document.getElementById('cerebrasKeyInput').value = STATE.cerebrasKey;
+      const aiModelInput = document.getElementById('aiModelModeInput');
+      if (aiModelInput) aiModelInput.value = STATE.aiModelMode || AI_MODEL_MODES.GLM;
       const aiStatus = document.getElementById('cerebrasServerStatus');
       if (aiStatus) {
-        aiStatus.textContent = STATE.aiConfigured
-          ? '✅ 서버 AI 키가 안전하게 설정되어 있습니다.'
-          : '⚠️ 서버의 CEREBRAS_API_KEY 환경변수가 필요합니다.';
+        aiStatus.textContent = BROWSER_API_MODE
+          ? isValidCerebrasKey(STATE.cerebrasKey)
+            ? '브라우저 개발 키가 설정되어 있습니다. 배포 전 반드시 제거하세요.'
+            : STATE.cerebrasKey
+              ? '⚠️ Cerebras API 키 형식이 올바르지 않습니다.'
+              : '브라우저 개발용 Cerebras API 키를 입력하세요.'
+          : STATE.aiConfigured
+            ? '✅ 서버 AI 키가 안전하게 설정되어 있습니다.'
+            : '⚠️ 서버의 CEREBRAS_API_KEY 환경변수가 필요합니다.';
       }
       document.getElementById('tokenReqResult').classList.add('hidden');
       document.getElementById('settingsModal').classList.remove('hidden');
@@ -259,16 +269,63 @@
     }
 
     // 입력 즉시 자동 저장 (개별 필드)
+    function normalizeCerebrasKey(value) {
+      const raw = String(value || '').trim().replace(/^Bearer\s+/i, '');
+      const embedded = raw.match(/csk-[A-Za-z0-9_-]{16,}/);
+      return embedded ? embedded[0] : raw;
+    }
+
+    function isValidCerebrasKey(value) {
+      return /^csk-[A-Za-z0-9_-]{16,}$/.test(normalizeCerebrasKey(value));
+    }
+
+    const AI_MODEL_MODES = Object.freeze({
+      GPT: 'gpt-oss-120b',
+      GLM: 'zai-glm-4.7',
+      COMPARE: 'compare-gpt-glm',
+    });
+
+    function getActiveCerebrasModel() {
+      return STATE.aiModelMode === AI_MODEL_MODES.GLM ? AI_MODEL_MODES.GLM : AI_MODEL_MODES.GPT;
+    }
+
+    function isModelExperimentMode() {
+      return STATE.aiModelMode === AI_MODEL_MODES.COMPARE;
+    }
+
+    function getCerebrasModelLabel(modelId) {
+      if (modelId === AI_MODEL_MODES.GLM) return 'zai-glm-4.7';
+      if (modelId === AI_MODEL_MODES.GPT) return 'gpt-oss-120b';
+      return modelId || 'unknown';
+    }
+
+    function prepareCerebrasBody(body, modelOverride = null) {
+      const requestedModel = body?.model;
+      const activeModel = getActiveCerebrasModel();
+      const model = modelOverride
+        || (requestedModel === AI_MODEL_MODES.GPT ? activeModel : requestedModel)
+        || activeModel;
+      const payload = { ...(body || {}), model };
+      // GLM reasoning is enabled by default and does not accept the GPT-OSS
+      // graduated high/medium/low setting. Keep only portable parameters.
+      if (model !== AI_MODEL_MODES.GPT && payload.reasoning_effort && payload.reasoning_effort !== 'none') {
+        delete payload.reasoning_effort;
+      }
+      return payload;
+    }
+
     function hasAIAccess() {
       return BROWSER_API_MODE
-        ? Boolean(STATE.cerebrasKey)
+        ? isValidCerebrasKey(STATE.cerebrasKey)
         : Boolean(getProxyBase() !== null && STATE.aiConfigured);
     }
 
     // AI 인증키는 브라우저에 노출하지 않고 서버 프록시에서만 주입한다.
-    async function cerebrasChat(body, timeoutMs = 30000) {
+    async function cerebrasChat(body, timeoutMs = 30000, options = {}) {
+      const payload = prepareCerebrasBody(body, options.model);
       if (BROWSER_API_MODE) {
-        if (!STATE.cerebrasKey) throw new Error('AI_SERVER_UNAVAILABLE');
+        const cerebrasKey = normalizeCerebrasKey(STATE.cerebrasKey);
+        if (!isValidCerebrasKey(cerebrasKey)) throw new Error('AI_KEY_INVALID');
         const ctrl = new AbortController();
         const timer = setTimeout(() => ctrl.abort(), timeoutMs);
         try {
@@ -276,9 +333,9 @@
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              Authorization: `Bearer ${STATE.cerebrasKey}`,
+              Authorization: `Bearer ${cerebrasKey}`,
             },
-            body: JSON.stringify(body),
+            body: JSON.stringify(payload),
             signal: ctrl.signal,
           });
         } finally {
@@ -293,7 +350,7 @@
         const resp = await fetch(`${proxyBase}/cerebras`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
+          body: JSON.stringify(payload),
           signal: ctrl.signal,
         });
         return resp;
@@ -304,6 +361,8 @@
 
     function autoSaveField(lsKey, value, stateKey) {
       let v = value.trim();
+      if (stateKey === 'cerebrasKey' && isValidCerebrasKey(v)) v = normalizeCerebrasKey(v);
+      if (stateKey === 'aiModelMode' && !Object.values(AI_MODEL_MODES).includes(v)) v = AI_MODEL_MODES.GLM;
       STATE[stateKey] = v;
       localStorage.setItem(lsKey, v);
       updateProxyStatus();
@@ -316,7 +375,16 @@
       STATE.apiKey = document.getElementById('apiKeyInput').value.trim();
       STATE.macAddr = document.getElementById('macAddrInput').value.trim();
       STATE.ntisKey = document.getElementById('ntisKeyInput').value.trim();
-      STATE.cerebrasKey = document.getElementById('cerebrasKeyInput').value.trim();
+      const aiModelInput = document.getElementById('aiModelModeInput');
+      STATE.aiModelMode = aiModelInput?.value || STATE.aiModelMode || AI_MODEL_MODES.GLM;
+      if (!Object.values(AI_MODEL_MODES).includes(STATE.aiModelMode)) STATE.aiModelMode = AI_MODEL_MODES.GLM;
+      const rawCerebrasKey = document.getElementById('cerebrasKeyInput').value.trim();
+      if (BROWSER_API_MODE && rawCerebrasKey && !isValidCerebrasKey(rawCerebrasKey)) {
+        showToast('Cerebras API 키 형식이 올바르지 않습니다. csk-로 시작하는 키만 입력해주세요.', 'warning');
+        document.getElementById('cerebrasKeyInput').focus();
+        return;
+      }
+      STATE.cerebrasKey = normalizeCerebrasKey(rawCerebrasKey);
 
       localStorage.setItem('sc_client_id', STATE.clientId);
       localStorage.setItem('sc_token', STATE.token);
@@ -325,6 +393,7 @@
       localStorage.setItem('sc_mac_addr', STATE.macAddr);
       localStorage.setItem('sc_ntis_key', STATE.ntisKey);
       localStorage.setItem('sc_cerebras_key', STATE.cerebrasKey);
+      localStorage.setItem('sc_ai_model_mode', STATE.aiModelMode);
       // tokenExpire는 발급 시 자동 저장되므로 여기서는 재스케줄만 수행
       STATE.tokenExpire = localStorage.getItem('sc_token_expire') || STATE.tokenExpire;
       scheduleTokenRefresh();
@@ -342,11 +411,14 @@
       STATE.macAddr = '';
       STATE.ntisKey = '';
       STATE.cerebrasKey = '';
-      ['sc_client_id', 'sc_token', 'sc_refresh_token', 'sc_api_key', 'sc_mac_addr', 'sc_ntis_key', 'sc_cerebras_key'].forEach(k => localStorage.removeItem(k));
+      STATE.aiModelMode = AI_MODEL_MODES.GLM;
+      ['sc_client_id', 'sc_token', 'sc_refresh_token', 'sc_api_key', 'sc_mac_addr', 'sc_ntis_key', 'sc_cerebras_key', 'sc_ai_model_mode'].forEach(k => localStorage.removeItem(k));
 
       ['clientIdInput', 'tokenInput', 'refreshTokenInput', 'apiKeyInput', 'macAddrInput', 'ntisKeyInput', 'cerebrasKeyInput'].forEach(id => {
         document.getElementById(id).value = '';
       });
+      const aiModelInput = document.getElementById('aiModelModeInput');
+      if (aiModelInput) aiModelInput.value = AI_MODEL_MODES.GLM;
 
       updateApiStatus();
       showToast('API 설정이 초기화되었습니다', 'info');
@@ -986,8 +1058,8 @@ Respond ONLY with this JSON structure:
   ]
 }`;
 
-      const resp = await cerebrasChat({
-        model: 'gpt-oss-120b',
+      const baseRequest = {
+        model: getActiveCerebrasModel(),
         reasoning_effort: 'high',   // 화이트스페이스 판단 — 추론 비중 큰 작업
         messages: [
           { role: 'system', content: systemPrompt },
@@ -995,17 +1067,16 @@ Respond ONLY with this JSON structure:
         ],
         temperature: 0.6,
         max_tokens: 8000,
-      }, 45000);
+      };
 
-      if (!resp.ok) {
-        const err = await resp.json().catch(() => ({}));
-        throw new Error(err?.error?.message || `Cerebras API 오류 (${resp.status})`);
-      }
+      if (isModelExperimentMode()) return runSubKeywordModelExperiment(baseRequest);
 
-      const data = await resp.json();
-      const raw  = (data?.choices?.[0]?.message?.content || '').trim();
-      console.log('[Cerebras RAG] raw response:', raw);
+      const attempt = await requestSubKeywordsWithModel(baseRequest, getActiveCerebrasModel());
+      if (attempt.error) throw new Error(attempt.error);
+      return attempt.result;
+    }
 
+    function parseSubKeywordPayload(raw) {
       // JSON 추출 + 관대한 복구 파싱 (마크다운 코드블록·콤마 누락 등 방어)
       let parsed = lenientJSONParse(raw);
 
@@ -1020,7 +1091,10 @@ Respond ONLY with this JSON structure:
         }
       }
       if (!parsed) throw new Error('AI 응답 파싱 실패: ' + raw.substring(0, 120));
+      return parsed;
+    }
 
+    function normalizeSubKeywordResult(parsed) {
       const themes     = Array.isArray(parsed?.themes)     ? parsed.themes     : [];
       const candidates = Array.isArray(parsed?.candidates) ? parsed.candidates : [];
       if (candidates.length < 1) throw new Error('후보 키워드 배열이 비어 있습니다');
@@ -1059,6 +1133,98 @@ Respond ONLY with this JSON structure:
         themes: mappedThemes,
         candidates: finalCandidates,
       };
+    }
+
+    function scoreSubKeywordModelResult(result) {
+      const candidates = result?.candidates || [];
+      const themes = result?.themes || [];
+      const uniqueKeywords = new Set(candidates.map(c => c.keyword)).size;
+      const uniqueThemes = new Set(candidates.map(c => c.theme).filter(Boolean)).size;
+      const hasKorean = text => /[가-힣]/.test(String(text || ''));
+      const conciseKeyword = text => {
+        const words = String(text || '').trim().split(/\s+/).filter(Boolean);
+        return words.length >= 1 && words.length <= 4;
+      };
+      const usefulPatentQuery = text => {
+        const value = String(text || '').trim();
+        const words = value.split(/\s+/).filter(Boolean);
+        return hasKorean(value) && words.length >= 1 && words.length <= 3;
+      };
+      const candidateShape = candidates.reduce((sum, c) => {
+        let score = 0;
+        if (hasKorean(c.keyword)) score += 2;
+        if (conciseKeyword(c.keyword)) score += 2;
+        if (usefulPatentQuery(c.patent_query || c.keyword)) score += 2;
+        if (Array.isArray(c.search_terms) && c.search_terms.length >= 2) score += 1;
+        if (c.gap_reason) score += 1;
+        if (c.target_market) score += 1;
+        if (!isNonCommercialTopic(`${c.theme} ${c.keyword}`)) score += 1;
+        return sum + score;
+      }, 0);
+      const targetCountScore = candidates.length >= 6 && candidates.length <= 8
+        ? 18
+        : Math.max(0, 18 - Math.abs(6 - candidates.length) * 4);
+      const diversityScore = Math.min(18, uniqueKeywords * 2 + uniqueThemes * 2);
+      const themeScore = Math.min(12, themes.filter(t => hasKorean(t.theme || t.keyword)).length * 2);
+      const fieldScore = Math.min(32, candidateShape);
+      const total = Math.round(Math.min(100, targetCountScore + diversityScore + themeScore + fieldScore + 20));
+      return { total, targetCountScore, diversityScore, themeScore, fieldScore };
+    }
+
+    async function requestSubKeywordsWithModel(baseRequest, modelId) {
+      const startedAt = Date.now();
+      try {
+        const resp = await cerebrasChat(baseRequest, 45000, { model: modelId });
+        if (!resp.ok) {
+          const err = await resp.json().catch(() => ({}));
+          return {
+            model: modelId,
+            error: err?.error?.message || `Cerebras API 오류 (${resp.status})`,
+            latencyMs: Date.now() - startedAt,
+            score: { total: 0 },
+          };
+        }
+        const data = await resp.json();
+        const raw = (data?.choices?.[0]?.message?.content || '').trim();
+        console.log(`[Cerebras ${modelId}] raw response:`, raw);
+        const parsed = parseSubKeywordPayload(raw);
+        const result = normalizeSubKeywordResult(parsed);
+        const score = scoreSubKeywordModelResult(result);
+        return { model: modelId, raw, result, score, latencyMs: Date.now() - startedAt };
+      } catch (error) {
+        return {
+          model: modelId,
+          error: error.message || 'AI 응답 처리 실패',
+          latencyMs: Date.now() - startedAt,
+          score: { total: 0 },
+        };
+      }
+    }
+
+    async function runSubKeywordModelExperiment(baseRequest) {
+      const models = [AI_MODEL_MODES.GPT, AI_MODEL_MODES.GLM];
+      const attempts = await Promise.all(models.map(model => requestSubKeywordsWithModel(baseRequest, model)));
+      const winner = [...attempts].sort((a, b) =>
+        (b.score?.total || 0) - (a.score?.total || 0) || (a.latencyMs || Infinity) - (b.latencyMs || Infinity)
+      )[0];
+      if (!winner || winner.error || !winner.result) {
+        const detail = attempts.map(a => `${getCerebrasModelLabel(a.model)}: ${a.error || `${a.score?.total || 0}점`}`).join(' / ');
+        throw new Error(`AI 모델 품질 실험 실패 (${detail})`);
+      }
+      const summary = {
+        winner: winner.model,
+        winnerLabel: getCerebrasModelLabel(winner.model),
+        attempts: attempts.map(a => ({
+          model: a.model,
+          label: getCerebrasModelLabel(a.model),
+          score: a.score?.total || 0,
+          latencyMs: a.latencyMs || 0,
+          candidateCount: a.result?.candidates?.length || 0,
+          error: a.error || '',
+        })),
+      };
+      showToast(`AI 품질 실험 결과: ${summary.winnerLabel} 선택 (${winner.score.total}점)`, 'info');
+      return { ...winner.result, modelExperiment: summary };
     }
 
     // 테마명 끝의 불필요한 메타 접미어(동향·트렌드·현황 등) 제거
@@ -1140,7 +1306,9 @@ Respond ONLY with this JSON structure:
 
       // AI 서버 환경변수 확인
       if (!hasAIAccess()) {
-        showToast('🤖 AI 서버 설정이 필요합니다. 프록시의 CEREBRAS_API_KEY를 확인해주세요.', 'warning');
+        showToast(BROWSER_API_MODE
+          ? '🤖 Cerebras API 키가 비어 있거나 형식이 올바르지 않습니다. csk-로 시작하는 키를 확인해주세요.'
+          : '🤖 AI 서버 설정이 필요합니다. 프록시의 CEREBRAS_API_KEY를 확인해주세요.', 'warning');
         return;
       }
 
@@ -1192,7 +1360,7 @@ Respond ONLY with this JSON structure:
           return;
         }
 
-        const { themes, candidates } = aiResult;
+        const { themes, candidates, modelExperiment } = aiResult;
 
         // ── Stage 3: 후보 실데이터 검증 ──────────────────────────
         setAnalysisProgress(STAGES, 2);
@@ -1233,7 +1401,7 @@ Respond ONLY with this JSON structure:
           abort();
           return;
         }
-        renderTechCommerceComparison(mainQuery, themes, top3, eliminated, exploratory);
+        renderTechCommerceComparison(mainQuery, themes, top3, eliminated, exploratory, modelExperiment);
 
       } catch (err) {
         console.error('[TechCommerce]', err);
@@ -1498,7 +1666,7 @@ Respond ONLY with this JSON structure:
     };
 
     // 비교 대시보드 렌더링 (top3 + eliminated + exploratory + AI 분석 테마)
-    function renderTechCommerceComparison(mainQuery, themes, top3, eliminated, exploratory = []) {
+    function renderTechCommerceComparison(mainQuery, themes, top3, eliminated, exploratory = [], modelExperiment = null) {
       const today  = new Date().toLocaleDateString('ko-KR', { year:'numeric', month:'2-digit', day:'2-digit' });
       if (!top3 || top3.length === 0) {
         showToast('유효한 유망 분야를 도출하지 못했습니다. 더 구체적인 기술 키워드로 재시도해보세요.', 'warning');
@@ -1534,6 +1702,21 @@ Respond ONLY with this JSON structure:
         2: { border:'#9ca3af', headerBg:'linear-gradient(135deg,#374151 0%,#4b5563 100%)', headerText:'white', cardBg:'#f9fafb' },
         3: { border:'#cd7c3a', headerBg:'linear-gradient(135deg,#78350f 0%,#b45309 100%)', headerText:'white', cardBg:'#fff7ed' },
       };
+
+      const modelExperimentHtml = modelExperiment ? `
+        <div style="background:#f8fafc;border:1px solid #e5e7eb;border-left:4px solid #64748b;border-radius:8px;padding:10px 14px;margin-bottom:18px;font-size:11px;color:#475569;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+            <strong style="color:#0f172a;">AI 품질 실험 결과: ${escHtml(modelExperiment.winnerLabel)} 선택</strong>
+            <span style="color:#64748b;">Stage 2 후보 생성 기준</span>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
+            ${modelExperiment.attempts.map(a => `
+              <span style="display:inline-flex;align-items:center;gap:6px;background:white;border:1px solid #e2e8f0;border-radius:999px;padding:4px 9px;">
+                <strong style="color:${a.model === modelExperiment.winner ? '#2563eb' : '#64748b'};">${escHtml(a.label)}</strong>
+                <span>${a.error ? '오류' : `${a.score}점 · 후보 ${a.candidateCount}개 · ${(a.latencyMs / 1000).toFixed(1)}초`}</span>
+              </span>`).join('')}
+          </div>
+        </div>` : '';
 
       // ── 순위 카드 HTML ────────────────────────────────────────────
       const rankCards = top3.map(r => {
@@ -1683,11 +1866,11 @@ Respond ONLY with this JSON structure:
               </div>
               <div style="background:white;border:1px solid #e5e7eb;border-left:4px solid #059669;border-radius:6px;padding:12px 14px;">
                 <p style="font-weight:700;color:#059669;margin:0 0 4px 0;">Step 3 — 3개 지표 산출</p>
-                <p style="margin:0;color:#6b7280;">핵심 데이터 오류와 신뢰도 60점 미만 후보는 정식 순위에서 보류합니다. 통과 후보는 <strong>공백 매력도</strong>(연구 기반 35% + 로그 특허강도 기반 IP 공백 40% + 연구 모멘텀·안정성 25%), <strong>전환·실행 근거</strong>(NTIS·보고서·특허 전환 신호), <strong>데이터 신뢰도</strong>(API 상태·검색 완화 깊이·관측량·추세 완결성)로 분리합니다. 후보군 상대 비교는 핵심 데이터가 정상이고 논문 5건 이상인 후보가 3개 이상일 때만 적용합니다.</p>
+                <p style="margin:0;color:#6b7280;">논문 20건 미만, 핵심 데이터 오류, 신뢰도 60점 미만 후보는 정식 순위에서 보류합니다. 논문 5~19건 후보는 성장·신뢰도 조건을 만족할 때만 <strong>초기 탐색 후보</strong>로 별도 표시합니다. 통과 후보는 <strong>공백 매력도</strong>(연구 기반 35% + IP 공백 신호 40% + 연구 모멘텀·안정성 25%), <strong>전환·실행 근거</strong>(NTIS·보고서·특허 전환 신호), <strong>데이터 신뢰도</strong>(API 상태·검색 완화 깊이·관측량·추세 완결성)로 분리합니다. IP 공백 신호는 직접 로그 특허강도 결핍을 기본으로 하며, 후보군 상대 비교는 핵심 데이터가 정상이고 논문 5건 이상인 후보가 3개 이상일 때만 보조 반영합니다.</p>
               </div>
               <div style="background:white;border:1px solid #e5e7eb;border-left:4px solid #f59e0b;border-radius:6px;padding:12px 14px;">
                 <p style="font-weight:700;color:#b45309;margin:0 0 4px 0;">Step 4 — 최종 순위 선정 (Top 3)</p>
-                <p style="margin:0;color:#6b7280;">공백 매력도에 데이터 신뢰도를 직접 반영한 내부 우선순위로 정렬하고, 같은 테마·유사 키워드는 한 개만 선정합니다. 서로 다른 유효 후보가 3개보다 적으면 유사 후보를 다시 채우지 않고 Top 1~2만 표시합니다. 전환·실행 근거는 순위와 분리하며, 표시값은 사업화 성공확률이 아닙니다.</p>
+                <p style="margin:0;color:#6b7280;">공백 매력도에 데이터 신뢰도를 직접 반영한 내부 우선순위로 정렬하고, 같은 테마·유사 키워드는 한 개만 선정합니다. 정식 순위 조건을 통과한 서로 다른 후보가 3개보다 적으면 유사 후보를 다시 채우지 않고 Top 1~2만 표시합니다. 전환·실행 근거는 순위와 분리하며, 표시값은 사업화 성공확률이 아닙니다.</p>
               </div>
             </div>
 
@@ -1695,7 +1878,7 @@ Respond ONLY with this JSON structure:
             <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;margin-bottom:12px;">
               <div style="background:white;border:1px solid #dbeafe;border-radius:8px;padding:10px 12px;">
                 <p style="font-size:11px;font-weight:700;color:#1d4ed8;margin:0 0 3px 0;">🔎 강한 공백 후보</p>
-                <p style="font-size:11px;color:#6b7280;margin:0;">논문 대비 로그 특허강도와 후보군 기준이 모두 낮고 데이터 신뢰도가 확보된 후속검토 후보</p>
+                <p style="font-size:11px;color:#6b7280;margin:0;">논문 대비 직접 로그 특허강도가 낮고, 사용 가능한 경우 후보군 기준에서도 낮으며 데이터 신뢰도가 확보된 후속검토 후보</p>
               </div>
               <div style="background:white;border:1px solid #dcfce7;border-radius:8px;padding:10px 12px;">
                 <p style="font-size:11px;font-weight:700;color:#15803d;margin:0 0 3px 0;">🌱 신흥 분야</p>
@@ -1749,6 +1932,8 @@ Respond ONLY with this JSON structure:
             <div style="background:#fafafa;border-left:4px solid #111;padding:10px 14px;border-radius:6px;margin-bottom:20px;font-size:11px;color:#555;">
               🤖 Cerebras AI + ScienceON + NTIS 실시간 데이터 기반 분석 &nbsp;|&nbsp; ${today}
             </div>
+
+            ${modelExperimentHtml}
 
             <!-- Step 1: AI 세부 기술 테마 -->
             ${themesHtml}
@@ -3673,7 +3858,7 @@ Keep it under 80 Korean characters. No preamble.`;
         const userPrompt = `Project Name: "${projName}"`;
 
         const resp = await cerebrasChat({
-          model: 'gpt-oss-120b',
+          model: getActiveCerebrasModel(),
           messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }],
           temperature: 0.3,
           max_tokens: 500,
@@ -3713,7 +3898,7 @@ Respond ONLY with:
       let resp;
       try {
         resp = await cerebrasChat({
-          model: 'gpt-oss-120b',
+          model: getActiveCerebrasModel(),
           messages: [
             { role: 'system', content: systemPrompt },
             { role: 'user', content: userPrompt },
@@ -4068,7 +4253,7 @@ Respond ONLY with:
 
       try {
         const resp = await cerebrasChat({
-          model: 'gpt-oss-120b',
+          model: getActiveCerebrasModel(),
           reasoning_effort: 'high',   // 3차원 가중 유사도 비교·Top-10 선정
           messages: [
             { role: 'system', content: systemPrompt },

@@ -399,6 +399,16 @@
             </div>
             <input type="password" id="cerebrasKeyInput" placeholder="Cerebras API 키 (개발 전용)" class="input-field" autocomplete="off"
               oninput="autoSaveField('sc_cerebras_key', this.value, 'cerebrasKey')">
+            <div class="text-xs font-semibold text-black mt-2 mb-1 flex items-center gap-1.5">
+              <iconify-icon icon="solar:tuning-2-bold-duotone" width="12"></iconify-icon>
+              AI 모델
+            </div>
+            <select id="aiModelModeInput" class="input-field text-xs"
+              onchange="autoSaveField('sc_ai_model_mode', this.value, 'aiModelMode')">
+              <option value="gpt-oss-120b">gpt-oss-120b · 기본</option>
+              <option value="zai-glm-4.7">zai-glm-4.7 · 품질 실험 후보</option>
+              <option value="compare-gpt-glm">품질 실험 · GPT OSS vs GLM</option>
+            </select>
             <div id="cerebrasServerStatus" class="input-field text-xs text-gray-500 mt-1" style="height:auto;min-height:38px;">
               서버 환경변수 CEREBRAS_API_KEY 상태를 확인 중입니다.
             </div>

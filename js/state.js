@@ -11,6 +11,7 @@
       macAddr: '',
       ntisKey: '',
       cerebrasKey: '',
+      aiModelMode: localStorage.getItem('sc_ai_model_mode') || 'zai-glm-4.7',
       aiConfigured: false,
       scienceOnConfigured: false,
       ntisConfigured: false,

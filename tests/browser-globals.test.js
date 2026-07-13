@@ -40,6 +40,10 @@ function createBrowserContext() {
       location: { protocol: 'http:', hostname: 'localhost', port: '3737' },
       addEventListener() {},
     },
+    AbortController: class AbortController {
+      constructor() { this.signal = {}; }
+      abort() {}
+    },
     AbortSignal: { timeout() { return undefined; } },
     fetch() { return Promise.resolve({ ok: false }); },
     setTimeout,
@@ -274,4 +278,87 @@ test('commerce detail report reuses the ranked gap indicator instead of a confli
   assert.match(ui, /analysisMeta\?\.indicators\?\.components\?\.gapSignal/);
   assert.doesNotMatch(ui, /logArti\s*\/\s*\(logArti\s*\+\s*logPatent\)/);
   assert.match(ui, /후속 검증 경로/);
+});
+
+test('commerce methodology text matches ranking gates and peer gap logic', () => {
+  const ui = fs.readFileSync(path.join(ROOT, 'js/ui.js'), 'utf8');
+  assert.match(ui, /논문 20건 미만, 핵심 데이터 오류, 신뢰도 60점 미만 후보는 정식 순위에서 보류/);
+  assert.match(ui, /논문 5~19건 후보는 성장·신뢰도 조건을 만족할 때만 <strong>초기 탐색 후보<\/strong>로 별도 표시/);
+  assert.match(ui, /IP 공백 신호는 직접 로그 특허강도 결핍을 기본으로 하며/);
+  assert.match(ui, /후보군 상대 비교는 핵심 데이터가 정상이고 논문 5건 이상인 후보가 3개 이상일 때만 보조 반영/);
+  assert.match(ui, /정식 순위 조건을 통과한 서로 다른 후보가 3개보다 적으면/);
+});
+
+test('Cerebras browser requests extract an ASCII key from pasted descriptive text', async () => {
+  const context = createBrowserContext();
+  loadScript(context, 'js/state.js');
+  loadScript(context, 'js/commerce-score.js');
+  loadScript(context, 'js/budget-core.js');
+  loadScript(context, 'js/ui.js');
+
+  let captured = null;
+  context.fetch = async (url, init) => {
+    captured = { url, init };
+    return { ok: true, json: async () => ({}) };
+  };
+  vm.runInContext("STATE.cerebrasKey = 'csk-abcdefghijklmnopqrstuvwxyz123456 cerebras API 키'", context);
+  await context.cerebrasChat({ messages: [] }, 1000);
+
+  assert.equal(captured.init.headers.Authorization, 'Bearer csk-abcdefghijklmnopqrstuvwxyz123456');
+  assert.match(captured.init.headers.Authorization, /^[\x20-\x7E]+$/);
+});
+
+test('Cerebras GLM model requests omit GPT-OSS reasoning effort', async () => {
+  const context = createBrowserContext();
+  loadScript(context, 'js/state.js');
+  loadScript(context, 'js/commerce-score.js');
+  loadScript(context, 'js/budget-core.js');
+  loadScript(context, 'js/ui.js');
+
+  let payload = null;
+  context.fetch = async (url, init) => {
+    payload = JSON.parse(init.body);
+    return { ok: true, json: async () => ({}) };
+  };
+  vm.runInContext("STATE.cerebrasKey = 'csk-abcdefghijklmnopqrstuvwxyz123456'; STATE.aiModelMode = 'zai-glm-4.7';", context);
+  await context.cerebrasChat({ model: 'gpt-oss-120b', reasoning_effort: 'high', messages: [] }, 1000);
+
+  assert.equal(payload.model, 'zai-glm-4.7');
+  assert.equal(Object.hasOwn(payload, 'reasoning_effort'), false);
+});
+
+test('AI model quality experiment mode is available in settings and result view', () => {
+  const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+  const ui = fs.readFileSync(path.join(ROOT, 'js/ui.js'), 'utf8');
+
+  assert.match(html, /id="aiModelModeInput"/);
+  assert.match(html, /value="compare-gpt-glm"/);
+  assert.match(ui, /function runSubKeywordModelExperiment/);
+  assert.match(ui, /AI 품질 실험 결과/);
+  assert.match(ui, /Stage 2 후보 생성 기준/);
+});
+
+test('GLM is the default model mode after benchmark result', () => {
+  const state = fs.readFileSync(path.join(ROOT, 'js/state.js'), 'utf8');
+  const main = fs.readFileSync(path.join(ROOT, 'js/main.js'), 'utf8');
+  const ui = fs.readFileSync(path.join(ROOT, 'js/ui.js'), 'utf8');
+
+  assert.match(state, /localStorage\.getItem\('sc_ai_model_mode'\) \|\| 'zai-glm-4\.7'/);
+  assert.match(main, /STATE\.aiModelMode \|\| 'zai-glm-4\.7'/);
+  assert.match(ui, /STATE\.aiModelMode = AI_MODEL_MODES\.GLM/);
+});
+
+test('invalid Cerebras browser keys fail before fetch builds a header', async () => {
+  const context = createBrowserContext();
+  loadScript(context, 'js/state.js');
+  loadScript(context, 'js/commerce-score.js');
+  loadScript(context, 'js/budget-core.js');
+  loadScript(context, 'js/ui.js');
+
+  let called = false;
+  context.fetch = async () => { called = true; return { ok: true }; };
+  vm.runInContext("STATE.cerebrasKey = '잘못된 API 키'", context);
+
+  await assert.rejects(context.cerebrasChat({ messages: [] }, 1000), /AI_KEY_INVALID/);
+  assert.equal(called, false);
 });

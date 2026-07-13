@@ -1,0 +1,1339 @@
+{
+  "createdAt": "2026-07-13T05:25:54.404Z",
+  "keywords": [
+    "인공지능",
+    "디지털트윈",
+    "재난안전",
+    "양자컴퓨팅",
+    "이차전지",
+    "자율주행",
+    "수소에너지",
+    "스마트팩토리",
+    "바이오센서",
+    "반도체 패키징"
+  ],
+  "summary": {
+    "gpt-oss-120b": {
+      "wins": 3,
+      "avgScore": 30,
+      "avgLatencySec": 4.06,
+      "parseOk": "3/10"
+    },
+    "zai-glm-4.7": {
+      "wins": 7,
+      "avgScore": 98.8,
+      "avgLatencySec": 8.18,
+      "parseOk": "10/10"
+    }
+  },
+  "byKeyword": [
+    {
+      "keyword": "인공지능",
+      "winner": "zai-glm-4.7",
+      "results": [
+        {
+          "keyword": "인공지능",
+          "model": "gpt-oss-120b",
+          "ok": false,
+          "latencyMs": 3096,
+          "score": {
+            "total": 0,
+            "candidates": 0,
+            "themes": 0,
+            "uniqueKeywords": 0,
+            "uniqueThemes": 0,
+            "keywordPenalty": 0,
+            "nonCommercialPenalty": 0
+          },
+          "sampleCandidates": [],
+          "finishReason": "length",
+          "messageKeys": [
+            "content",
+            "reasoning",
+            "role"
+          ],
+          "error": "parse failed: {\n  \"themes\": [\n    {\n      \"theme\": \"인공지능 기반 영상 분석\",\n      \"hypothesis\": \"실시간 고해상도 영상 분석을 위한 경량 AI 모델이 상용화되지 않았다\"\n    },\n    {\n      \"theme\": \"인공지능 음성 및 언어 처리\",\n      \"hypothesis\": \"다중 언어 실시간 번역 AI 모"
+        },
+        {
+          "keyword": "인공지능",
+          "model": "zai-glm-4.7",
+          "ok": true,
+          "latencyMs": 6139,
+          "score": {
+            "total": 100,
+            "candidates": 6,
+            "themes": 6,
+            "uniqueKeywords": 6,
+            "uniqueThemes": 6,
+            "keywordPenalty": 0,
+            "nonCommercialPenalty": 0
+          },
+          "sampleCandidates": [
+            {
+              "keyword": "엣지 디바이스 경량화",
+              "patent_query": "엣지 추론"
+            },
+            {
+              "keyword": "신약 분자 생성 AI",
+              "patent_query": "분자 생성"
+            },
+            {
+              "keyword": "지능형 CCTV 이상 탐지",
+              "patent_query": "행동 분석"
+            }
+          ],
+          "finishReason": "stop",
+          "messageKeys": [
+            "content",
+            "reasoning",
+            "role"
+          ],
+          "error": ""
+        }
+      ]
+    },
+    {
+      "keyword": "디지털트윈",
+      "winner": "zai-glm-4.7",
+      "results": [
+        {
+          "keyword": "디지털트윈",
+          "model": "gpt-oss-120b",
+          "ok": false,
+          "latencyMs": 3404,
+          "score": {
+            "total": 0,
+            "candidates": 0,
+            "themes": 0,
+            "uniqueKeywords": 0,
+            "uniqueThemes": 0,
+            "keywordPenalty": 0,
+            "nonCommercialPenalty": 0
+          },
+          "sampleCandidates": [],
+          "finishReason": "length",
+          "messageKeys": [
+            "reasoning",
+            "role"
+          ],
+          "error": "parse failed: "
+        },
+        {
+          "keyword": "디지털트윈",
+          "model": "zai-glm-4.7",
+          "ok": true,
+          "latencyMs": 8202,
+          "score": {
+            "total": 100,
+            "candidates": 6,
+            "themes": 6,
+            "uniqueKeywords": 6,
+            "uniqueThemes": 6,
+            "keywordPenalty": 0,
+            "nonCommercialPenalty": 0
+          },
+          "sampleCandidates": [
+            {
+              "keyword": "센서 융합 예지보전",
+              "patent_query": "센서 융합"
+            },
+            {
+              "keyword": "드론 3D 매핑",
+              "patent_query": "드론 측량"
+            },
+            {
+              "keyword": "반도체 가상 공정",
+              "patent_query": "가상 공정"
+            }
+          ],
+          "finishReason": "stop",
+          "messageKeys": [
+            "content",
+            "reasoning",
+            "role"
+          ],
+          "error": ""
+        }
+      ]
+    },
+    {
+      "keyword": "재난안전",
+      "winner": "gpt-oss-120b",
+      "results": [
+        {
+          "keyword": "재난안전",
+          "model": "gpt-oss-120b",
+          "ok": true,
+          "latencyMs": 2266,
+          "score": {
+            "total": 100,
+            "candidates": 6,
+            "themes": 6,
+            "uniqueKeywords": 6,
+            "uniqueThemes": 6,
+            "keywordPenalty": 0,
+            "nonCommercialPenalty": 0
+          },
+          "sampleCandidates": [
+            {
+              "keyword": "지진 감지 모듈",
+              "patent_query": "지진 감지"
+            },
+            {
+              "keyword": "재난 매핑 드론",
+              "patent_query": "재난 드론"
+            },
+            {
+              "keyword": "다중 연기 센서",
+              "patent_query": "연기 센서"
+            }
+          ],
+          "finishReason": "stop",
+          "messageKeys": [
+            "content",
+            "reasoning",
+            "role"
+          ],
+          "error": ""
+        },
+        {
+          "keyword": "재난안전",
+          "model": "zai-glm-4.7",
+          "ok": true,
+          "latencyMs": 6986,
+          "score": {
+            "total": 92,
+            "candidates": 6,
+            "themes": 6,
+            "uniqueKeywords": 6,
+            "uniqueThemes": 6,
+            "keywordPenalty": 8,
+            "nonCommercialPenalty": 0
+          },
+          "sampleCandidates": [
+            {
+              "keyword": "화재 영상 분석",
+              "patent_query": "화재 영상"
+            },
+            {
+              "keyword": "광섬유 구조 감시",
+              "patent_query": "광섬유 센서"
+            },
+            {
+              "keyword": "자율 구조 드론",
+              "patent_query": "구조 드론"
+            }
+          ],
+          "finishReason": "stop",
+          "messageKeys": [
+            "content",
+            "reasoning",
+            "role"
+          ],
+          "error": ""
+        }
+      ]
+    },
+    {
+      "keyword": "양자컴퓨팅",
+      "winner": "gpt-oss-120b",
+      "results": [
+        {
+          "keyword": "양자컴퓨팅",
+          "model": "gpt-oss-120b",
+          "ok": true,
+          "latencyMs": 1907,
+          "score": {
+            "total": 100,
+            "candidates": 6,
+            "themes": 6,
+            "uniqueKeywords": 6,
+            "uniqueThemes": 6,
+            "keywordPenalty": 0,
+            "nonCommercialPenalty": 0
+          },
+          "sampleCandidates": [
+            {
+              "keyword": "양자 오류 정정",
+              "patent_query": "양자 오류"
+            },
+            {
+              "keyword": "양자 메모리 인터페이스",
+              "patent_query": "양자 메모리"
+            },
+            {
+              "keyword": "양자 센서 디텍터",
+              "patent_query": "양자 센서"
+            }
+          ],
+          "finishReason": "stop",
+          "messageKeys": [
+            "content",
+            "reasoning",
+            "role"
+          ],
+          "error": ""
+        },
+        {
+          "keyword": "양자컴퓨팅",
+          "model": "zai-glm-4.7",
+          "ok": true,
+          "latencyMs": 9762,
+          "score": {
+            "total": 100,
+            "candidates": 6,
+            "themes": 6,
+            "uniqueKeywords": 6,
+            "uniqueThemes": 6,
+            "keywordPenalty": 0,
+            "nonCommercialPenalty": 0
+          },
+          "sampleCandidates": [
+            {
+              "keyword": "극저온 CMOS 제어",
+              "patent_query": "극저온 CMOS"
+            },
+            {
+              "keyword": "실리콘 양자점 비트",
+              "patent_query": "실리콘 양자점"
+            },
+            {
+              "keyword": "실시간 오류 보정",
+              "patent_query": "양자 오류 정정"
+            }
+          ],
+          "finishReason": "stop",
+          "messageKeys": [
+            "content",
+            "reasoning",
+            "role"
+          ],
+          "error": ""
+        }
+      ]
+    },
+    {
+      "keyword": "이차전지",
+      "winner": "gpt-oss-120b",
+      "results": [
+        {
+          "keyword": "이차전지",
+          "model": "gpt-oss-120b",
+          "ok": true,
+          "latencyMs": 2419,
+          "score": {
+            "total": 100,
+            "candidates": 7,
+            "themes": 6,
+            "uniqueKeywords": 7,
+            "uniqueThemes": 6,
+            "keywordPenalty": 0,
+            "nonCommercialPenalty": 0
+          },
+          "sampleCandidates": [
+            {
+              "keyword": "고체 전해질",
+              "patent_query": "고체 전해질"
+            },
+            {
+              "keyword": "고니켈 양극재",
+              "patent_query": "고니켈 양극"
+            },
+            {
+              "keyword": "초고속 충전",
+              "patent_query": "충전 제어"
+            }
+          ],
+          "finishReason": "stop",
+          "messageKeys": [
+            "content",
+            "reasoning",
+            "role"
+          ],
+          "error": ""
+        },
+        {
+          "keyword": "이차전지",
+          "model": "zai-glm-4.7",
+          "ok": true,
+          "latencyMs": 6994,
+          "score": {
+            "total": 100,
+            "candidates": 6,
+            "themes": 6,
+            "uniqueKeywords": 6,
+            "uniqueThemes": 6,
+            "keywordPenalty": 0,
+            "nonCommercialPenalty": 0
+          },
+          "sampleCandidates": [
+            {
+              "keyword": "계면 안정화 코팅층",
+              "patent_query": "고체 전해질 코팅"
+            },
+            {
+              "keyword": "자가 치유 전도성 바인더",
+              "patent_query": "실리콘 바인더"
+            },
+            {
+              "keyword": "건식 전극 라미네이팅",
+              "patent_query": "건식 전극 공정"
+            }
+          ],
+          "finishReason": "stop",
+          "messageKeys": [
+            "content",
+            "reasoning",
+            "role"
+          ],
+          "error": ""
+        }
+      ]
+    },
+    {
+      "keyword": "자율주행",
+      "winner": "zai-glm-4.7",
+      "results": [
+        {
+          "keyword": "자율주행",
+          "model": "gpt-oss-120b",
+          "ok": false,
+          "latencyMs": 3474,
+          "score": {
+            "total": 0,
+            "candidates": 0,
+            "themes": 0,
+            "uniqueKeywords": 0,
+            "uniqueThemes": 0,
+            "keywordPenalty": 0,
+            "nonCommercialPenalty": 0
+          },
+          "sampleCandidates": [],
+          "finishReason": "length",
+          "messageKeys": [
+            "reasoning",
+            "role"
+          ],
+          "error": "parse failed: "
+        },
+        {
+          "keyword": "자율주행",
+          "model": "zai-glm-4.7",
+          "ok": true,
+          "latencyMs": 6999,
+          "score": {
+            "total": 96,
+            "candidates": 5,
+            "themes": 5,
+            "uniqueKeywords": 5,
+            "uniqueThemes": 5,
+            "keywordPenalty": 0,
+            "nonCommercialPenalty": 0
+          },
+          "sampleCandidates": [
+            {
+              "keyword": "센서 융합 알고리즘",
+              "patent_query": "센서 융합"
+            },
+            {
+              "keyword": "V2X 신호 처리",
+              "patent_query": "V2X 통신"
+            },
+            {
+              "keyword": "엣지 컴퓨팅 칩",
+              "patent_query": "엣지 AI 가속"
+            }
+          ],
+          "finishReason": "stop",
+          "messageKeys": [
+            "content",
+            "reasoning",
+            "role"
+          ],
+          "error": ""
+        }
+      ]
+    },
+    {
+      "keyword": "수소에너지",
+      "winner": "zai-glm-4.7",
+      "results": [
+        {
+          "keyword": "수소에너지",
+          "model": "gpt-oss-120b",
+          "ok": false,
+          "latencyMs": 3244,
+          "score": {
+            "total": 0,
+            "candidates": 0,
+            "themes": 0,
+            "uniqueKeywords": 0,
+            "uniqueThemes": 0,
+            "keywordPenalty": 0,
+            "nonCommercialPenalty": 0
+          },
+          "sampleCandidates": [],
+          "finishReason": "length",
+          "messageKeys": [
+            "reasoning",
+            "role"
+          ],
+          "error": "parse failed: "
+        },
+        {
+          "keyword": "수소에너지",
+          "model": "zai-glm-4.7",
+          "ok": true,
+          "latencyMs": 14952,
+          "score": {
+            "total": 100,
+            "candidates": 6,
+            "themes": 6,
+            "uniqueKeywords": 6,
+            "uniqueThemes": 6,
+            "keywordPenalty": 0,
+            "nonCommercialPenalty": 0
+          },
+          "sampleCandidates": [
+            {
+              "keyword": "고분자 전해막 스택",
+              "patent_query": "PEM 전해 스택"
+            },
+            {
+              "keyword": "금속 수소화물 탱크",
+              "patent_query": "금속 수소화물 저장"
+            },
+            {
+              "keyword": "연료전지 분리판",
+              "patent_query": "연료전지 금속 분리판"
+            }
+          ],
+          "finishReason": "stop",
+          "messageKeys": [
+            "content",
+            "reasoning",
+            "role"
+          ],
+          "error": ""
+        }
+      ]
+    },
+    {
+      "keyword": "스마트팩토리",
+      "winner": "zai-glm-4.7",
+      "results": [
+        {
+          "keyword": "스마트팩토리",
+          "model": "gpt-oss-120b",
+          "ok": false,
+          "latencyMs": 12117,
+          "score": {
+            "total": 0,
+            "candidates": 0,
+            "themes": 0,
+            "uniqueKeywords": 0,
+            "uniqueThemes": 0,
+            "keywordPenalty": 0,
+            "nonCommercialPenalty": 0
+          },
+          "sampleCandidates": [],
+          "finishReason": "length",
+          "messageKeys": [
+            "reasoning",
+            "role"
+          ],
+          "error": "parse failed: "
+        },
+        {
+          "keyword": "스마트팩토리",
+          "model": "zai-glm-4.7",
+          "ok": true,
+          "latencyMs": 7549,
+          "score": {
+            "total": 100,
+            "candidates": 6,
+            "themes": 6,
+            "uniqueKeywords": 6,
+            "uniqueThemes": 6,
+            "keywordPenalty": 0,
+            "nonCommercialPenalty": 0
+          },
+          "sampleCandidates": [
+            {
+              "keyword": "AI 비전 품질 검사",
+              "patent_query": "비전 검사 딥러닝"
+            },
+            {
+              "keyword": "디지털 트윈 예지 보전",
+              "patent_query": "디지털 트윈 예측"
+            },
+            {
+              "keyword": "협동 로봇 안전 제어",
+              "patent_query": "협동 로봇 충돌 회피"
+            }
+          ],
+          "finishReason": "stop",
+          "messageKeys": [
+            "content",
+            "reasoning",
+            "role"
+          ],
+          "error": ""
+        }
+      ]
+    },
+    {
+      "keyword": "바이오센서",
+      "winner": "zai-glm-4.7",
+      "results": [
+        {
+          "keyword": "바이오센서",
+          "model": "gpt-oss-120b",
+          "ok": false,
+          "latencyMs": 5222,
+          "score": {
+            "total": 0,
+            "candidates": 0,
+            "themes": 0,
+            "uniqueKeywords": 0,
+            "uniqueThemes": 0,
+            "keywordPenalty": 0,
+            "nonCommercialPenalty": 0
+          },
+          "sampleCandidates": [],
+          "finishReason": "length",
+          "messageKeys": [
+            "reasoning",
+            "role"
+          ],
+          "error": "parse failed: "
+        },
+        {
+          "keyword": "바이오센서",
+          "model": "zai-glm-4.7",
+          "ok": true,
+          "latencyMs": 7850,
+          "score": {
+            "total": 100,
+            "candidates": 7,
+            "themes": 7,
+            "uniqueKeywords": 7,
+            "uniqueThemes": 7,
+            "keywordPenalty": 0,
+            "nonCommercialPenalty": 0
+          },
+          "sampleCandidates": [
+            {
+              "keyword": "그래핀 전극 센서",
+              "patent_query": "그래핀 바이오센서"
+            },
+            {
+              "keyword": "종이 기반 마이크로유체",
+              "patent_query": "종이 마이크로유체"
+            },
+            {
+              "keyword": "메타표면 광학 센서",
+              "patent_query": "메타표면 센서"
+            }
+          ],
+          "finishReason": "stop",
+          "messageKeys": [
+            "content",
+            "reasoning",
+            "role"
+          ],
+          "error": ""
+        }
+      ]
+    },
+    {
+      "keyword": "반도체 패키징",
+      "winner": "zai-glm-4.7",
+      "results": [
+        {
+          "keyword": "반도체 패키징",
+          "model": "gpt-oss-120b",
+          "ok": false,
+          "latencyMs": 3483,
+          "score": {
+            "total": 0,
+            "candidates": 0,
+            "themes": 0,
+            "uniqueKeywords": 0,
+            "uniqueThemes": 0,
+            "keywordPenalty": 0,
+            "nonCommercialPenalty": 0
+          },
+          "sampleCandidates": [],
+          "finishReason": "length",
+          "messageKeys": [
+            "reasoning",
+            "role"
+          ],
+          "error": "parse failed: "
+        },
+        {
+          "keyword": "반도체 패키징",
+          "model": "zai-glm-4.7",
+          "ok": true,
+          "latencyMs": 6378,
+          "score": {
+            "total": 100,
+            "candidates": 6,
+            "themes": 6,
+            "uniqueKeywords": 6,
+            "uniqueThemes": 6,
+            "keywordPenalty": 0,
+            "nonCommercialPenalty": 0
+          },
+          "sampleCandidates": [
+            {
+              "keyword": "유리 기판 변형 제어",
+              "patent_query": "유리 기판 패키징"
+            },
+            {
+              "keyword": "하이브리드 본딩 표면처리",
+              "patent_query": "하이브리드 본딩"
+            },
+            {
+              "keyword": "광 전기 변환 모듈",
+              "patent_query": "광 패키징"
+            }
+          ],
+          "finishReason": "stop",
+          "messageKeys": [
+            "content",
+            "reasoning",
+            "role"
+          ],
+          "error": ""
+        }
+      ]
+    }
+  ],
+  "results": [
+    {
+      "keyword": "인공지능",
+      "model": "gpt-oss-120b",
+      "ok": false,
+      "latencyMs": 3096,
+      "score": {
+        "total": 0,
+        "candidates": 0,
+        "themes": 0,
+        "uniqueKeywords": 0,
+        "uniqueThemes": 0,
+        "keywordPenalty": 0,
+        "nonCommercialPenalty": 0
+      },
+      "sampleCandidates": [],
+      "finishReason": "length",
+      "messageKeys": [
+        "content",
+        "reasoning",
+        "role"
+      ],
+      "error": "parse failed: {\n  \"themes\": [\n    {\n      \"theme\": \"인공지능 기반 영상 분석\",\n      \"hypothesis\": \"실시간 고해상도 영상 분석을 위한 경량 AI 모델이 상용화되지 않았다\"\n    },\n    {\n      \"theme\": \"인공지능 음성 및 언어 처리\",\n      \"hypothesis\": \"다중 언어 실시간 번역 AI 모"
+    },
+    {
+      "keyword": "인공지능",
+      "model": "zai-glm-4.7",
+      "ok": true,
+      "latencyMs": 6139,
+      "score": {
+        "total": 100,
+        "candidates": 6,
+        "themes": 6,
+        "uniqueKeywords": 6,
+        "uniqueThemes": 6,
+        "keywordPenalty": 0,
+        "nonCommercialPenalty": 0
+      },
+      "sampleCandidates": [
+        {
+          "keyword": "엣지 디바이스 경량화",
+          "patent_query": "엣지 추론"
+        },
+        {
+          "keyword": "신약 분자 생성 AI",
+          "patent_query": "분자 생성"
+        },
+        {
+          "keyword": "지능형 CCTV 이상 탐지",
+          "patent_query": "행동 분석"
+        }
+      ],
+      "finishReason": "stop",
+      "messageKeys": [
+        "content",
+        "reasoning",
+        "role"
+      ],
+      "error": ""
+    },
+    {
+      "keyword": "디지털트윈",
+      "model": "gpt-oss-120b",
+      "ok": false,
+      "latencyMs": 3404,
+      "score": {
+        "total": 0,
+        "candidates": 0,
+        "themes": 0,
+        "uniqueKeywords": 0,
+        "uniqueThemes": 0,
+        "keywordPenalty": 0,
+        "nonCommercialPenalty": 0
+      },
+      "sampleCandidates": [],
+      "finishReason": "length",
+      "messageKeys": [
+        "reasoning",
+        "role"
+      ],
+      "error": "parse failed: "
+    },
+    {
+      "keyword": "디지털트윈",
+      "model": "zai-glm-4.7",
+      "ok": true,
+      "latencyMs": 8202,
+      "score": {
+        "total": 100,
+        "candidates": 6,
+        "themes": 6,
+        "uniqueKeywords": 6,
+        "uniqueThemes": 6,
+        "keywordPenalty": 0,
+        "nonCommercialPenalty": 0
+      },
+      "sampleCandidates": [
+        {
+          "keyword": "센서 융합 예지보전",
+          "patent_query": "센서 융합"
+        },
+        {
+          "keyword": "드론 3D 매핑",
+          "patent_query": "드론 측량"
+        },
+        {
+          "keyword": "반도체 가상 공정",
+          "patent_query": "가상 공정"
+        }
+      ],
+      "finishReason": "stop",
+      "messageKeys": [
+        "content",
+        "reasoning",
+        "role"
+      ],
+      "error": ""
+    },
+    {
+      "keyword": "재난안전",
+      "model": "gpt-oss-120b",
+      "ok": true,
+      "latencyMs": 2266,
+      "score": {
+        "total": 100,
+        "candidates": 6,
+        "themes": 6,
+        "uniqueKeywords": 6,
+        "uniqueThemes": 6,
+        "keywordPenalty": 0,
+        "nonCommercialPenalty": 0
+      },
+      "sampleCandidates": [
+        {
+          "keyword": "지진 감지 모듈",
+          "patent_query": "지진 감지"
+        },
+        {
+          "keyword": "재난 매핑 드론",
+          "patent_query": "재난 드론"
+        },
+        {
+          "keyword": "다중 연기 센서",
+          "patent_query": "연기 센서"
+        }
+      ],
+      "finishReason": "stop",
+      "messageKeys": [
+        "content",
+        "reasoning",
+        "role"
+      ],
+      "error": ""
+    },
+    {
+      "keyword": "재난안전",
+      "model": "zai-glm-4.7",
+      "ok": true,
+      "latencyMs": 6986,
+      "score": {
+        "total": 92,
+        "candidates": 6,
+        "themes": 6,
+        "uniqueKeywords": 6,
+        "uniqueThemes": 6,
+        "keywordPenalty": 8,
+        "nonCommercialPenalty": 0
+      },
+      "sampleCandidates": [
+        {
+          "keyword": "화재 영상 분석",
+          "patent_query": "화재 영상"
+        },
+        {
+          "keyword": "광섬유 구조 감시",
+          "patent_query": "광섬유 센서"
+        },
+        {
+          "keyword": "자율 구조 드론",
+          "patent_query": "구조 드론"
+        }
+      ],
+      "finishReason": "stop",
+      "messageKeys": [
+        "content",
+        "reasoning",
+        "role"
+      ],
+      "error": ""
+    },
+    {
+      "keyword": "양자컴퓨팅",
+      "model": "gpt-oss-120b",
+      "ok": true,
+      "latencyMs": 1907,
+      "score": {
+        "total": 100,
+        "candidates": 6,
+        "themes": 6,
+        "uniqueKeywords": 6,
+        "uniqueThemes": 6,
+        "keywordPenalty": 0,
+        "nonCommercialPenalty": 0
+      },
+      "sampleCandidates": [
+        {
+          "keyword": "양자 오류 정정",
+          "patent_query": "양자 오류"
+        },
+        {
+          "keyword": "양자 메모리 인터페이스",
+          "patent_query": "양자 메모리"
+        },
+        {
+          "keyword": "양자 센서 디텍터",
+          "patent_query": "양자 센서"
+        }
+      ],
+      "finishReason": "stop",
+      "messageKeys": [
+        "content",
+        "reasoning",
+        "role"
+      ],
+      "error": ""
+    },
+    {
+      "keyword": "양자컴퓨팅",
+      "model": "zai-glm-4.7",
+      "ok": true,
+      "latencyMs": 9762,
+      "score": {
+        "total": 100,
+        "candidates": 6,
+        "themes": 6,
+        "uniqueKeywords": 6,
+        "uniqueThemes": 6,
+        "keywordPenalty": 0,
+        "nonCommercialPenalty": 0
+      },
+      "sampleCandidates": [
+        {
+          "keyword": "극저온 CMOS 제어",
+          "patent_query": "극저온 CMOS"
+        },
+        {
+          "keyword": "실리콘 양자점 비트",
+          "patent_query": "실리콘 양자점"
+        },
+        {
+          "keyword": "실시간 오류 보정",
+          "patent_query": "양자 오류 정정"
+        }
+      ],
+      "finishReason": "stop",
+      "messageKeys": [
+        "content",
+        "reasoning",
+        "role"
+      ],
+      "error": ""
+    },
+    {
+      "keyword": "이차전지",
+      "model": "gpt-oss-120b",
+      "ok": true,
+      "latencyMs": 2419,
+      "score": {
+        "total": 100,
+        "candidates": 7,
+        "themes": 6,
+        "uniqueKeywords": 7,
+        "uniqueThemes": 6,
+        "keywordPenalty": 0,
+        "nonCommercialPenalty": 0
+      },
+      "sampleCandidates": [
+        {
+          "keyword": "고체 전해질",
+          "patent_query": "고체 전해질"
+        },
+        {
+          "keyword": "고니켈 양극재",
+          "patent_query": "고니켈 양극"
+        },
+        {
+          "keyword": "초고속 충전",
+          "patent_query": "충전 제어"
+        }
+      ],
+      "finishReason": "stop",
+      "messageKeys": [
+        "content",
+        "reasoning",
+        "role"
+      ],
+      "error": ""
+    },
+    {
+      "keyword": "이차전지",
+      "model": "zai-glm-4.7",
+      "ok": true,
+      "latencyMs": 6994,
+      "score": {
+        "total": 100,
+        "candidates": 6,
+        "themes": 6,
+        "uniqueKeywords": 6,
+        "uniqueThemes": 6,
+        "keywordPenalty": 0,
+        "nonCommercialPenalty": 0
+      },
+      "sampleCandidates": [
+        {
+          "keyword": "계면 안정화 코팅층",
+          "patent_query": "고체 전해질 코팅"
+        },
+        {
+          "keyword": "자가 치유 전도성 바인더",
+          "patent_query": "실리콘 바인더"
+        },
+        {
+          "keyword": "건식 전극 라미네이팅",
+          "patent_query": "건식 전극 공정"
+        }
+      ],
+      "finishReason": "stop",
+      "messageKeys": [
+        "content",
+        "reasoning",
+        "role"
+      ],
+      "error": ""
+    },
+    {
+      "keyword": "자율주행",
+      "model": "gpt-oss-120b",
+      "ok": false,
+      "latencyMs": 3474,
+      "score": {
+        "total": 0,
+        "candidates": 0,
+        "themes": 0,
+        "uniqueKeywords": 0,
+        "uniqueThemes": 0,
+        "keywordPenalty": 0,
+        "nonCommercialPenalty": 0
+      },
+      "sampleCandidates": [],
+      "finishReason": "length",
+      "messageKeys": [
+        "reasoning",
+        "role"
+      ],
+      "error": "parse failed: "
+    },
+    {
+      "keyword": "자율주행",
+      "model": "zai-glm-4.7",
+      "ok": true,
+      "latencyMs": 6999,
+      "score": {
+        "total": 96,
+        "candidates": 5,
+        "themes": 5,
+        "uniqueKeywords": 5,
+        "uniqueThemes": 5,
+        "keywordPenalty": 0,
+        "nonCommercialPenalty": 0
+      },
+      "sampleCandidates": [
+        {
+          "keyword": "센서 융합 알고리즘",
+          "patent_query": "센서 융합"
+        },
+        {
+          "keyword": "V2X 신호 처리",
+          "patent_query": "V2X 통신"
+        },
+        {
+          "keyword": "엣지 컴퓨팅 칩",
+          "patent_query": "엣지 AI 가속"
+        }
+      ],
+      "finishReason": "stop",
+      "messageKeys": [
+        "content",
+        "reasoning",
+        "role"
+      ],
+      "error": ""
+    },
+    {
+      "keyword": "수소에너지",
+      "model": "gpt-oss-120b",
+      "ok": false,
+      "latencyMs": 3244,
+      "score": {
+        "total": 0,
+        "candidates": 0,
+        "themes": 0,
+        "uniqueKeywords": 0,
+        "uniqueThemes": 0,
+        "keywordPenalty": 0,
+        "nonCommercialPenalty": 0
+      },
+      "sampleCandidates": [],
+      "finishReason": "length",
+      "messageKeys": [
+        "reasoning",
+        "role"
+      ],
+      "error": "parse failed: "
+    },
+    {
+      "keyword": "수소에너지",
+      "model": "zai-glm-4.7",
+      "ok": true,
+      "latencyMs": 14952,
+      "score": {
+        "total": 100,
+        "candidates": 6,
+        "themes": 6,
+        "uniqueKeywords": 6,
+        "uniqueThemes": 6,
+        "keywordPenalty": 0,
+        "nonCommercialPenalty": 0
+      },
+      "sampleCandidates": [
+        {
+          "keyword": "고분자 전해막 스택",
+          "patent_query": "PEM 전해 스택"
+        },
+        {
+          "keyword": "금속 수소화물 탱크",
+          "patent_query": "금속 수소화물 저장"
+        },
+        {
+          "keyword": "연료전지 분리판",
+          "patent_query": "연료전지 금속 분리판"
+        }
+      ],
+      "finishReason": "stop",
+      "messageKeys": [
+        "content",
+        "reasoning",
+        "role"
+      ],
+      "error": ""
+    },
+    {
+      "keyword": "스마트팩토리",
+      "model": "gpt-oss-120b",
+      "ok": false,
+      "latencyMs": 12117,
+      "score": {
+        "total": 0,
+        "candidates": 0,
+        "themes": 0,
+        "uniqueKeywords": 0,
+        "uniqueThemes": 0,
+        "keywordPenalty": 0,
+        "nonCommercialPenalty": 0
+      },
+      "sampleCandidates": [],
+      "finishReason": "length",
+      "messageKeys": [
+        "reasoning",
+        "role"
+      ],
+      "error": "parse failed: "
+    },
+    {
+      "keyword": "스마트팩토리",
+      "model": "zai-glm-4.7",
+      "ok": true,
+      "latencyMs": 7549,
+      "score": {
+        "total": 100,
+        "candidates": 6,
+        "themes": 6,
+        "uniqueKeywords": 6,
+        "uniqueThemes": 6,
+        "keywordPenalty": 0,
+        "nonCommercialPenalty": 0
+      },
+      "sampleCandidates": [
+        {
+          "keyword": "AI 비전 품질 검사",
+          "patent_query": "비전 검사 딥러닝"
+        },
+        {
+          "keyword": "디지털 트윈 예지 보전",
+          "patent_query": "디지털 트윈 예측"
+        },
+        {
+          "keyword": "협동 로봇 안전 제어",
+          "patent_query": "협동 로봇 충돌 회피"
+        }
+      ],
+      "finishReason": "stop",
+      "messageKeys": [
+        "content",
+        "reasoning",
+        "role"
+      ],
+      "error": ""
+    },
+    {
+      "keyword": "바이오센서",
+      "model": "gpt-oss-120b",
+      "ok": false,
+      "latencyMs": 5222,
+      "score": {
+        "total": 0,
+        "candidates": 0,
+        "themes": 0,
+        "uniqueKeywords": 0,
+        "uniqueThemes": 0,
+        "keywordPenalty": 0,
+        "nonCommercialPenalty": 0
+      },
+      "sampleCandidates": [],
+      "finishReason": "length",
+      "messageKeys": [
+        "reasoning",
+        "role"
+      ],
+      "error": "parse failed: "
+    },
+    {
+      "keyword": "바이오센서",
+      "model": "zai-glm-4.7",
+      "ok": true,
+      "latencyMs": 7850,
+      "score": {
+        "total": 100,
+        "candidates": 7,
+        "themes": 7,
+        "uniqueKeywords": 7,
+        "uniqueThemes": 7,
+        "keywordPenalty": 0,
+        "nonCommercialPenalty": 0
+      },
+      "sampleCandidates": [
+        {
+          "keyword": "그래핀 전극 센서",
+          "patent_query": "그래핀 바이오센서"
+        },
+        {
+          "keyword": "종이 기반 마이크로유체",
+          "patent_query": "종이 마이크로유체"
+        },
+        {
+          "keyword": "메타표면 광학 센서",
+          "patent_query": "메타표면 센서"
+        }
+      ],
+      "finishReason": "stop",
+      "messageKeys": [
+        "content",
+        "reasoning",
+        "role"
+      ],
+      "error": ""
+    },
+    {
+      "keyword": "반도체 패키징",
+      "model": "gpt-oss-120b",
+      "ok": false,
+      "latencyMs": 3483,
+      "score": {
+        "total": 0,
+        "candidates": 0,
+        "themes": 0,
+        "uniqueKeywords": 0,
+        "uniqueThemes": 0,
+        "keywordPenalty": 0,
+        "nonCommercialPenalty": 0
+      },
+      "sampleCandidates": [],
+      "finishReason": "length",
+      "messageKeys": [
+        "reasoning",
+        "role"
+      ],
+      "error": "parse failed: "
+    },
+    {
+      "keyword": "반도체 패키징",
+      "model": "zai-glm-4.7",
+      "ok": true,
+      "latencyMs": 6378,
+      "score": {
+        "total": 100,
+        "candidates": 6,
+        "themes": 6,
+        "uniqueKeywords": 6,
+        "uniqueThemes": 6,
+        "keywordPenalty": 0,
+        "nonCommercialPenalty": 0
+      },
+      "sampleCandidates": [
+        {
+          "keyword": "유리 기판 변형 제어",
+          "patent_query": "유리 기판 패키징"
+        },
+        {
+          "keyword": "하이브리드 본딩 표면처리",
+          "patent_query": "하이브리드 본딩"
+        },
+        {
+          "keyword": "광 전기 변환 모듈",
+          "patent_query": "광 패키징"
+        }
+      ],
+      "finishReason": "stop",
+      "messageKeys": [
+        "content",
+        "reasoning",
+        "role"
+      ],
+      "error": ""
+    }
+  ]
+}

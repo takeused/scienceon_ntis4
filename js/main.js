@@ -17,6 +17,7 @@
       STATE.macAddr     = browserValue('sc_mac_addr', 'macAddr');
       STATE.ntisKey     = browserValue('sc_ntis_key', 'ntisKey');
       STATE.cerebrasKey = browserValue('sc_cerebras_key', 'cerebrasKey');
+      STATE.aiModelMode = localStorage.getItem('sc_ai_model_mode') || STATE.aiModelMode || 'zai-glm-4.7';
       
       initTheme();
       updateFavCount();

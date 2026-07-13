@@ -317,9 +317,16 @@ test('commerce methodology text matches ranking gates and peer gap logic', () =>
   const ui = fs.readFileSync(path.join(ROOT, 'js/ui.js'), 'utf8');
   assert.match(ui, /논문 20건 미만, 핵심 데이터 오류, 신뢰도 60점 미만 후보는 정식 순위에서 보류/);
   assert.match(ui, /논문 5~19건 후보는 성장·신뢰도 조건을 만족할 때만 <strong>초기 탐색 후보<\/strong>로 별도 표시/);
-  assert.match(ui, /IP 공백 신호는 직접 로그 특허강도 결핍을 기본으로 하며/);
-  assert.match(ui, /후보군 상대 비교는 핵심 데이터가 정상이고 논문 5건 이상인 후보가 3개 이상일 때만 보조 반영/);
+  assert.match(ui, /log10\(\(논문\+1\)\/\(특허\+1\)\)\/2/);
+  assert.match(ui, /검색 완화 수준·검색어 폭이 비슷한 후보가 3개 이상일 때만 사용/);
   assert.match(ui, /정식 순위 조건을 통과한 서로 다른 후보가 3개보다 적으면/);
+});
+
+test('commerce analysis still renders diagnostics when no candidate passes formal ranking', () => {
+  const ui = fs.readFileSync(path.join(ROOT, 'js/ui.js'), 'utf8');
+  assert.match(ui, /const hasRankedCandidates = top3\.length > 0/);
+  assert.match(ui, /if \(hasRankedCandidates\) selectRankCard\(1\)/);
+  assert.doesNotMatch(ui, /if \(!top3 \|\| top3\.length === 0\) \{[\s\S]{0,180}return;/);
 });
 
 test('Cerebras browser requests extract an ASCII key from pasted descriptive text', async () => {

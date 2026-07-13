@@ -1396,11 +1396,9 @@ Respond ONLY with this JSON structure:
         await new Promise(r => setTimeout(r, 300)); // brief visual pause
 
         const { top3, eliminated, exploratory } = selectTop3WithDiversity(rawResults, trendSignals);
-        if (!top3 || top3.length === 0) {
-          showToast('유효한 유망 분야를 도출하지 못했습니다. 다른 검색어로 시도해보세요.', 'warning');
-          abort();
-          return;
-        }
+        // 정식 순위가 0개여도 초기 탐색 후보와 제외 사유는 분석 결과다.
+        // 화면을 닫아버리면 사용자가 검색식·표본·오류 원인을 확인할 수 없다.
+        if (!top3.length) showToast('정식 순위 후보는 없지만 검증 결과와 보류 사유를 표시합니다.', 'warning');
         renderTechCommerceComparison(mainQuery, themes, top3, eliminated, exploratory, modelExperiment);
 
       } catch (err) {
@@ -1583,10 +1581,12 @@ Respond ONLY with this JSON structure:
 
     function selectTop3WithDiversity(results, trendSignals = []) {
       const sigMap = Object.fromEntries(trendSignals.map(s => [s.keyword, s]));
-      const peerContext = CommerceScoring.buildPeerContext(results);
       results.forEach(r => {
         r.trendSignal = sigMap[r.keyword] || null;
-        r.indicators = calcCommerceIndicators(r, r.trendSignal, peerContext);
+        // 검색 완화 수준과 검색어 폭이 비슷한 후보끼리만 상대 기준을 만든다.
+        // 후보 전체 중앙값 하나를 공유하면 넓은 단어 검색이 다른 후보의 공백도를 흔든다.
+        r.peerContext = CommerceScoring.buildPeerContext(results, 5, r);
+        r.indicators = calcCommerceIndicators(r, r.trendSignal, r.peerContext);
         r.score = r.indicators.rankingScore;
       });
       const sorted = [...results].sort((a, b) => b.score - a.score);
@@ -1641,6 +1641,7 @@ Respond ONLY with this JSON structure:
         createdAt: new Date().toISOString(),
         mainQuery,
         results: results.map(r => ({
+          scoringVersion: 4,
           keyword: r.keyword,
           rank: r.rank || null,
           counts: r.counts,
@@ -1648,6 +1649,7 @@ Respond ONLY with this JSON structure:
           queryMeta: r.queryMeta,
           trendSignal: r.trendSignal,
           indicators: r.indicators,
+          peerContext: r.peerContext,
           enrichment: r.enrichment,
         })),
       });
@@ -1668,12 +1670,11 @@ Respond ONLY with this JSON structure:
     // 비교 대시보드 렌더링 (top3 + eliminated + exploratory + AI 분석 테마)
     function renderTechCommerceComparison(mainQuery, themes, top3, eliminated, exploratory = [], modelExperiment = null) {
       const today  = new Date().toLocaleDateString('ko-KR', { year:'numeric', month:'2-digit', day:'2-digit' });
-      if (!top3 || top3.length === 0) {
-        showToast('유효한 유망 분야를 도출하지 못했습니다. 더 구체적인 기술 키워드로 재시도해보세요.', 'warning');
-        return;
-      }
-      const allZero = top3.every(r => !r.score || r.score === 0);
-      const winner = top3[0];
+      top3 = Array.isArray(top3) ? top3 : [];
+      eliminated = Array.isArray(eliminated) ? eliminated : [];
+      exploratory = Array.isArray(exploratory) ? exploratory : [];
+      const hasRankedCandidates = top3.length > 0;
+      const allZero = !hasRankedCandidates;
 
       const displayScore = value => Number.isFinite(Number(value)) ? Number(value).toFixed(1) : '0.0';
 
@@ -1866,7 +1867,7 @@ Respond ONLY with this JSON structure:
               </div>
               <div style="background:white;border:1px solid #e5e7eb;border-left:4px solid #059669;border-radius:6px;padding:12px 14px;">
                 <p style="font-weight:700;color:#059669;margin:0 0 4px 0;">Step 3 — 3개 지표 산출</p>
-                <p style="margin:0;color:#6b7280;">논문 20건 미만, 핵심 데이터 오류, 신뢰도 60점 미만 후보는 정식 순위에서 보류합니다. 논문 5~19건 후보는 성장·신뢰도 조건을 만족할 때만 <strong>초기 탐색 후보</strong>로 별도 표시합니다. 통과 후보는 <strong>공백 매력도</strong>(연구 기반 35% + IP 공백 신호 40% + 연구 모멘텀·안정성 25%), <strong>전환·실행 근거</strong>(NTIS·보고서·특허 전환 신호), <strong>데이터 신뢰도</strong>(API 상태·검색 완화 깊이·관측량·추세 완결성)로 분리합니다. IP 공백 신호는 직접 로그 특허강도 결핍을 기본으로 하며, 후보군 상대 비교는 핵심 데이터가 정상이고 논문 5건 이상인 후보가 3개 이상일 때만 보조 반영합니다.</p>
+                <p style="margin:0;color:#6b7280;">논문 20건 미만, 핵심 데이터 오류, 신뢰도 60점 미만 후보는 정식 순위에서 보류합니다. 논문 5~19건 후보는 성장·신뢰도 조건을 만족할 때만 <strong>초기 탐색 후보</strong>로 별도 표시합니다. 통과 후보는 <strong>공백 매력도</strong>(연구 기반 35% + IP 공백 신호 40% + 연구 모멘텀·안정성 25%), <strong>전환·실행 근거</strong>(NTIS·보고서·특허 전환 신호), <strong>데이터 신뢰도</strong>(API 상태·검색 완화 깊이·관측량·추세 완결성)로 분리합니다. 직접 IP 공백은 <strong>log10((논문+1)/(특허+1))/2</strong>로 산출해 같은 특허/논문 비율의 규모 편향을 줄입니다. 후보군 상대 비교는 핵심 데이터가 정상이고 논문 5건 이상이며 검색 완화 수준·검색어 폭이 비슷한 후보가 3개 이상일 때만 사용하고, 후보 수와 분포 안정성에 따라 반영 비중을 낮춥니다.</p>
               </div>
               <div style="background:white;border:1px solid #e5e7eb;border-left:4px solid #f59e0b;border-radius:6px;padding:12px 14px;">
                 <p style="font-weight:700;color:#b45309;margin:0 0 4px 0;">Step 4 — 최종 순위 선정 (Top 3)</p>
@@ -1878,7 +1879,7 @@ Respond ONLY with this JSON structure:
             <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;margin-bottom:12px;">
               <div style="background:white;border:1px solid #dbeafe;border-radius:8px;padding:10px 12px;">
                 <p style="font-size:11px;font-weight:700;color:#1d4ed8;margin:0 0 3px 0;">🔎 강한 공백 후보</p>
-                <p style="font-size:11px;color:#6b7280;margin:0;">논문 대비 직접 로그 특허강도가 낮고, 사용 가능한 경우 후보군 기준에서도 낮으며 데이터 신뢰도가 확보된 후속검토 후보</p>
+                <p style="font-size:11px;color:#6b7280;margin:0;">논문 대비 보정 로그 특허 비중이 낮고, 비교 가능한 후보군 기준에서도 낮으며 데이터 신뢰도가 확보된 후속검토 후보</p>
               </div>
               <div style="background:white;border:1px solid #dcfce7;border-radius:8px;padding:10px 12px;">
                 <p style="font-size:11px;font-weight:700;color:#15803d;margin:0 0 3px 0;">🌱 신흥 분야</p>
@@ -1895,7 +1896,7 @@ Respond ONLY with this JSON structure:
             </div>
 
             <p style="font-size:11px;color:#9ca3af;margin:0;border-top:1px solid #e5e7eb;padding-top:10px;">
-              ※ 특허 패밀리·유효권리·시장·TRL 데이터는 아직 미연결입니다. 최종 투자·사업화 결정 전에 FTO와 시장·기술성숙도 검토가 필요합니다.
+              ※ 특허 0건은 공백 만점으로 보지 않고 신뢰도도 감점합니다. 특허 패밀리·유효권리·연구-특허 시차·시장·TRL 데이터는 아직 미연결이므로 최종 투자·사업화 결정 전에 FTO와 별도 검토가 필요합니다.
             </p>
           </div>
         </details>`;
@@ -1924,8 +1925,8 @@ Respond ONLY with this JSON structure:
 
             <!-- 데이터 부족 경고 -->
             ${allZero ? `<div style="background:#fef3c7;border-left:4px solid #f59e0b;padding:12px 16px;border-radius:6px;margin-bottom:16px;font-size:12px;color:#92400e;">
-              ⚠️ <strong>공백 우선순위를 산출하지 못했습니다.</strong> 후보의 논문이 20건 미만이거나 핵심 데이터 조회에 실패했습니다.<br>
-              더 넓은 기술 키워드(예: "자율주행" → "자율주행 센서")로 재시도하거나 검색어를 바꿔보세요.
+              ⚠️ <strong>정식 공백 우선순위는 산출하지 않았습니다.</strong> 논문 표본·핵심 데이터·신뢰도 기준을 통과한 후보가 없습니다.<br>
+              아래 초기 탐색 후보와 제외 사유에서 검색 완화 수준, API 오류, 관측량을 확인하세요.
             </div>` : ''}
 
             <!-- 메타 callout -->
@@ -1941,7 +1942,7 @@ Respond ONLY with this JSON structure:
             <!-- ★ 순위별 카드 -->
             <h3 style="font-size:13px;font-weight:700;color:#111;margin:0 0 12px 0;">🏅 연구–IP 전환 공백 우선 검토 후보</h3>
             <div style="display:flex;flex-wrap:wrap;gap:16px;margin-bottom:24px;" id="rankCardGrid">
-              ${rankCards}
+              ${rankCards || '<p style="font-size:12px;color:#6b7280;margin:0;">정식 순위 기준을 통과한 후보가 없습니다.</p>'}
             </div>
 
             <!-- 제외된 후보 -->
@@ -1982,7 +1983,7 @@ Respond ONLY with this JSON structure:
       };
 
       // 1위 카드 자동 선택
-      selectRankCard(1);
+      if (hasRankedCandidates) selectRankCard(1);
 
       // 캐시
       window._techCommerceCache = {};

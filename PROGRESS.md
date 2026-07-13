@@ -11,6 +11,27 @@
 - Cerebras 개발용 키가 브라우저 구성에 존재한다. 이 파일을 공개 저장소·배포 산출물에 포함하면 안 된다.
 - 공통 API 주소 도우미 `getProxyBase()`와 `getApiBase()`는 `js/state.js`에 있어 차트와 분석 기능 모두가 접근할 수 있다.
 
+## 최근 완료: 연구–IP 전환 공백 분석 산식 안정화
+
+2026-07-13 추가 검토에서 점수의 규모 편향과 후보군 비교 오염, Top 0 결과 유실을 보완했다.
+
+- 직접 공백 산식을 `log10((논문+1)/(특허+1))/2` 기반으로 바꿔 같은 특허/논문 비율이 데이터 규모에 따라 크게 달라지지 않게 했다.
+- 후보군 상대 기준은 검색 완화 수준과 검색어 폭이 비슷한 후보끼리만 만들고, 후보 수와 MAD 기반 신뢰도에 따라 최대 30% 비중을 축소 적용한다.
+- 특허 0건은 공백 신호 70점 상한에 더해 데이터 신뢰도도 감점하고 불확실성 플래그를 기록한다.
+- 정식 Top 후보가 0개여도 초기 탐색 후보와 제외 사유를 결과 화면에 표시한다.
+- 분석 이력 결과에 `scoringVersion: 4`와 후보별 `peerContext`를 저장한다.
+- 상세 검토 내용은 `RESEARCH_IP_GAP_REVIEW.md`에 기록했다.
+
+검증 명령:
+
+```powershell
+node --check js\commerce-score.js
+node --check js\ui.js
+node --test tests\budget-core.test.js tests\commerce-score.test.js tests\browser-globals.test.js
+```
+
+검증 결과: 전체 55개 테스트 통과, 실패 0개.
+
 ## 최근 완료: Cerebras 모델 품질 실험 모드
 
 연구–IP 전환 공백 분석의 AI 후보 생성 품질을 비교하기 위해 Cerebras 모델 선택 기능을 추가했다.

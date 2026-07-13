@@ -150,3 +150,47 @@ test('보고서 1건을 보고서 근거 만점으로 처리하지 않는다', (
   assert.ok(one.components.reportSignal < many.components.reportSignal);
   assert.ok(one.components.reportSignal < 100);
 });
+
+test('같은 특허 논문 비율은 데이터 규모가 달라도 직접 공백 신호가 안정적이다', () => {
+  const base = {
+    metrics: okMetrics,
+    queryMeta: { comparable: true, variantsTried: ['규모 안정성'] },
+    trendSignal: { status: 'ok', growthRate: 0, recent: 20, prev: 20, yearlyCounts: [10, 10, 10, 10] },
+  };
+  const small = computeIndicators({ ...base, counts: { arti: 100, patent: 10, ntis: 10, report: 1 } });
+  const large = computeIndicators({ ...base, counts: { arti: 10000, patent: 1000, ntis: 10, report: 1 } });
+
+  assert.ok(Math.abs(small.components.directGapSignal - large.components.directGapSignal) < 3);
+});
+
+test('후보군 기준은 검색 완화 수준과 검색어 폭이 비슷한 후보만 비교한다', () => {
+  const makeResult = (query, relaxed, relaxationDepth, arti, patent) => ({
+    counts: { arti, patent },
+    metrics: { arti: { status: 'ok' }, patent: { status: 'ok' } },
+    queryMeta: { canonicalQuery: query, relaxed, relaxationDepth },
+  });
+  const reference = makeResult('재난 예측 센서', false, 0, 200, 10);
+  const context = buildPeerContext([
+    reference,
+    makeResult('재난 감지 센서', false, 0, 180, 12),
+    makeResult('홍수 예측 장치', false, 0, 150, 8),
+    makeResult('재난', true, 3, 5000, 3000),
+  ], 5, reference);
+
+  assert.equal(context.peerCount, 3);
+  assert.ok(context.peerReliability > 0 && context.peerReliability < 1);
+});
+
+test('유효한 특허 0건은 공백 점수뿐 아니라 데이터 신뢰도에도 불확실성을 남긴다', () => {
+  const base = {
+    counts: { arti: 200, ntis: 20, report: 1 },
+    metrics: okMetrics,
+    queryMeta: { comparable: true, variantsTried: ['특허 관측 불확실성'] },
+    trendSignal: { status: 'ok', growthRate: 0, recent: 30, prev: 30, yearlyCounts: [15, 15, 15, 15] },
+  };
+  const zero = computeIndicators({ ...base, counts: { ...base.counts, patent: 0 } });
+  const observed = computeIndicators({ ...base, counts: { ...base.counts, patent: 1 } });
+
+  assert.ok(zero.confidence < observed.confidence);
+  assert.ok(zero.uncertaintyFlags.includes('zero_patent_requires_validation'));
+});

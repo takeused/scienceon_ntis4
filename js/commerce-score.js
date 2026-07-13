@@ -16,22 +16,58 @@
     return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
   };
 
-  const patentIntensityFor = counts => {
+  const directGapFor = counts => {
     const papers = count(counts?.arti);
     const patents = count(counts?.patent);
-    const logPaper = Math.log10(papers + 1);
-    return logPaper > 0 ? Math.log10(patents + 1) / logPaper : NaN;
+    if (papers <= 0) return NaN;
+    // 논문과 특허에 같은 +1 보정을 적용한 뒤 비율을 로그화한다.
+    // 기존 log(patent)/log(paper)는 같은 10% 비율도 100/10과
+    // 10,000/1,000에서 서로 다른 공백으로 평가하는 규모 편향이 있었다.
+    return clamp(Math.log10((papers + 1) / (patents + 1)) / 2);
   };
 
-  function buildPeerContext(results = [], minPapers = 5) {
+  const patentIntensityFor = counts => {
+    const directGap = directGapFor(counts);
+    return Number.isFinite(directGap) ? 1 - directGap : NaN;
+  };
+
+  const queryWordCount = result => String(result?.queryMeta?.canonicalQuery || result?.keyword || '')
+    .trim().split(/\s+/).filter(Boolean).length;
+
+  function comparableQueryScope(result, referenceResult) {
+    if (!referenceResult) return true;
+    const resultMeta = result?.queryMeta || {};
+    const referenceMeta = referenceResult?.queryMeta || {};
+    if (Boolean(resultMeta.relaxed) !== Boolean(referenceMeta.relaxed)) return false;
+    const resultDepth = Math.max(0, Number(resultMeta.relaxationDepth) || 0);
+    const referenceDepth = Math.max(0, Number(referenceMeta.relaxationDepth) || 0);
+    if (Math.abs(resultDepth - referenceDepth) > 1) return false;
+    const resultWords = queryWordCount(result);
+    const referenceWords = queryWordCount(referenceResult);
+    return !resultWords || !referenceWords || Math.abs(resultWords - referenceWords) <= 1;
+  }
+
+  function buildPeerContext(results = [], minPapers = 5, referenceResult = null) {
     const intensities = results
       .filter(result => count(result?.counts?.arti) >= minPapers)
       .filter(result => metricUsable(result?.metrics?.arti) && metricUsable(result?.metrics?.patent))
+      .filter(result => comparableQueryScope(result, referenceResult))
       .map(result => patentIntensityFor(result.counts))
       .filter(Number.isFinite);
+    const center = intensities.length >= 3 ? median(intensities) : null;
+    const medianAbsoluteDeviation = center === null
+      ? null
+      : median(intensities.map(value => Math.abs(value - center)));
+    // 후보 3개만으로 만든 중앙값은 사용 가능하되 영향력을 낮춘다.
+    // 후보 수가 늘고 분포가 조밀할수록 상대 기준의 신뢰도가 높아진다.
+    const peerReliability = center === null
+      ? 0
+      : clamp((intensities.length - 2) / 4) * (1 - 0.5 * clamp((medianAbsoluteDeviation || 0) / 0.35));
     return {
-      medianPatentIntensity: intensities.length >= 3 ? median(intensities) : null,
+      medianPatentIntensity: center,
       peerCount: intensities.length,
+      medianAbsoluteDeviation,
+      peerReliability,
     };
   }
 
@@ -89,11 +125,9 @@
     const reports = count(counts.report);
 
     const paperFoundation = logScale(papers, 1000);
-    const logPaper = Math.log10(papers + 1);
-    const logPatent = Math.log10(patents + 1);
-    const patentIntensity = logPaper > 0 ? logPatent / logPaper : 0;
-    // 논문과 특허의 로그 규모가 같으면 공백 0, 특허 강도가 낮을수록 1에 접근한다.
-    const directGapSignal = logPaper > 0 ? clamp(1 - patentIntensity) : 0;
+    const directGapSignal = directGapFor(counts) || 0;
+    // 0은 논문 대비 특허 희소, 1은 논문과 같거나 더 많은 특허 색인 규모를 뜻한다.
+    const patentIntensity = papers > 0 ? 1 - directGapSignal : 0;
     const peerIntensity = Number(peerContext.peerCount) >= 3 && Number.isFinite(Number(peerContext.medianPatentIntensity))
       ? Number(peerContext.medianPatentIntensity)
       : null;
@@ -102,7 +136,13 @@
     const peerGapSignal = peerIntensity === null
       ? directGapSignal
       : clamp(0.5 + (peerIntensity - patentIntensity) / Math.max(peerIntensity, 0.20) * 0.25);
-    let gapSignal = 0.70 * directGapSignal + 0.30 * peerGapSignal;
+    const peerReliability = peerIntensity === null
+      ? 0
+      : Number.isFinite(Number(peerContext.peerReliability))
+        ? clamp(Number(peerContext.peerReliability))
+        : 1;
+    const peerWeight = 0.30 * peerReliability;
+    let gapSignal = (1 - peerWeight) * directGapSignal + peerWeight * peerGapSignal;
     // 특허 0건은 진짜 공백과 검색 실패를 구분하기 어려우므로 만점으로 보지 않는다.
     if (patents === 0) gapSignal = Math.min(gapSignal, 0.70);
 
@@ -152,9 +192,12 @@
     const queryTraceability = Array.isArray(queryMeta.variantsTried) && queryMeta.variantsTried.length
       ? 1
       : 0.70;
+    // 유효한 0건 응답도 검색식·분류·색인 차이와 진짜 공백을 완전히 구분하지 못한다.
+    // 오류와 동일 취급하지는 않되, 소수라도 특허가 관측된 경우보다 신뢰도를 낮춘다.
+    const patentObservationReliability = patents === 0 && metricUsable(metrics.patent) ? 0.85 : 1;
     const confidence = 100 * (
       0.35 * metricQuality +
-      0.25 * queryComparable * queryPenalty * queryTraceability +
+      0.25 * queryComparable * queryPenalty * queryTraceability * patentObservationReliability +
       0.20 * paperReliability +
       0.20 * trendReliability
     );
@@ -164,6 +207,11 @@
     const exploratory = papers >= 5 && papers < 20 && coreDataValid && confidence >= 65 && momentum.growth >= 0.65;
     // 신뢰도를 약한 보정치가 아니라 실제 우선순위의 비례 요인으로 사용한다.
     const rankingScore = eligible ? opportunity * confidence / 100 : 0;
+    const uncertaintyFlags = [];
+    if (patents === 0 && metricUsable(metrics.patent)) uncertaintyFlags.push('zero_patent_requires_validation');
+    if (queryMeta.relaxed) uncertaintyFlags.push('relaxed_query');
+    if (trend.status !== 'ok') uncertaintyFlags.push('trend_incomplete');
+    if (peerIntensity === null) uncertaintyFlags.push('peer_baseline_unavailable');
 
     return {
       eligible,
@@ -186,10 +234,13 @@
         patentTranslationSignal: Number((patentTranslationSignal * 100).toFixed(1)),
         externalSignal: Number((externalSignal * 100).toFixed(1)),
         queryPenalty: Number((queryPenalty * 100).toFixed(1)),
+        peerReliability: Number((peerReliability * 100).toFixed(1)),
+        patentObservationReliability: Number((patentObservationReliability * 100).toFixed(1)),
       },
       exploratory,
       confidenceGate: confidence >= 60,
       externalDataStatus: externalSignals.length ? 'connected' : 'not_connected',
+      uncertaintyFlags,
     };
   }
 
@@ -197,7 +248,9 @@
     clamp,
     median,
     metricUsable,
+    directGapFor,
     patentIntensityFor,
+    comparableQueryScope,
     buildPeerContext,
     summarizeTrendMetrics,
     researchMomentum,

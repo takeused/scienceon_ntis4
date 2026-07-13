@@ -174,7 +174,7 @@
       border: 1px solid transparent;
       cursor: pointer;
       transition: all 0.15s;
-      display: inline-flex;
+      display: flex;
       align-items: center;
       gap: 0.5rem;
     }
@@ -963,6 +963,30 @@
     }
     .budget-table tr:last-child td { border-bottom: none; }
     .budget-table tr:hover td { background: #fafafa; }
+    .budget-more-btn {
+      display: flex;
+      align-items: center;
+      gap: .3rem;
+      width: max-content;
+      margin: .55rem auto 0;
+      padding: .42rem .75rem;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: var(--surface);
+      color: var(--secondary);
+      font-family: inherit;
+      font-size: .75rem;
+      font-weight: 600;
+      line-height: 1;
+      cursor: pointer;
+      transition: background .15s, border-color .15s, color .15s;
+    }
+    .budget-more-btn:hover {
+      background: var(--brand-soft);
+      border-color: #c7d2fe;
+      color: #3730a3;
+    }
+    .budget-more-count { color: var(--tertiary); font-weight: 500; }
     .budget-score-bar {
       height: 6px;
       background: #f3f4f6;
@@ -1250,4 +1274,109 @@
     html.dark .btn-analysis:hover {
       background: #fff;
       border-color: #fff;
+    }
+
+    /* Budget result density and neutral callout surface. */
+    .budget-inline-box {
+      padding: 1.25rem;
+    }
+    .budget-hero {
+      padding: .9rem 1rem;
+      margin-bottom: .75rem;
+    }
+    .budget-hero-eyebrow { margin-bottom: .3rem; }
+    .budget-hero-value { font-size: 1.85rem; }
+    .budget-hero-chips { gap: .35rem; margin-top: .6rem; }
+    .budget-chip { padding: .24rem .6rem; }
+    .budget-hero-diagnostic {
+      margin-top: .55rem;
+      padding-top: .55rem;
+    }
+    .budget-ladder {
+      gap: .4rem;
+      margin: -.1rem 0 .8rem;
+    }
+    .budget-ladder-chip { padding: .3rem .7rem; }
+    .budget-warning {
+      display: flex;
+      flex-direction: column;
+      gap: .18rem;
+      margin-bottom: .8rem;
+      padding: .65rem .8rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      background: var(--surface-subtle);
+      color: var(--secondary);
+      font-size: .76rem;
+      line-height: 1.5;
+    }
+    .budget-kpi-grid {
+      gap: .65rem;
+      margin-bottom: .8rem;
+    }
+    .budget-kpi-card {
+      padding: .85rem .9rem;
+      border-radius: var(--radius-md);
+    }
+    .budget-kpi-label { margin-bottom: .3rem; font-size: .66rem; }
+    .budget-kpi-value { font-size: 1.25rem; }
+    .budget-kpi-sub { font-size: .7rem; }
+    .budget-section-title {
+      margin: 1rem 0 .55rem;
+      font-size: .88rem;
+    }
+    .budget-note {
+      padding: .8rem .9rem;
+      font-size: .78rem;
+      line-height: 1.6;
+    }
+    .budget-dist { height: 42px; }
+    .budget-dist-axis { margin-bottom: .65rem; }
+    .budget-table { font-size: .76rem; }
+    .budget-table th { padding: .5rem .6rem; font-size: .68rem; }
+    .budget-table td { padding: .55rem .6rem; }
+    .budget-method { margin-top: .9rem; padding: .7rem .85rem; }
+    .budget-disclaimer { margin-top: .9rem; padding-top: .7rem; }
+    @media (max-width: 640px) {
+      .budget-inline-box { padding: .85rem; }
+      .budget-hero-value { font-size: 1.6rem; }
+      .budget-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .budget-kpi-card { padding: .7rem; }
+    }
+
+    /* Use the wide result surface instead of leaving the hero's right half empty. */
+    .budget-hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(300px, .9fr);
+      column-gap: 1.5rem;
+      align-items: center;
+    }
+    .budget-hero-eyebrow,
+    .budget-hero-value,
+    .budget-hero-chips { grid-column: 1; }
+    .budget-hero-diagnostic {
+      grid-column: 2;
+      grid-row: 1 / span 3;
+      align-self: stretch;
+      display: flex;
+      align-items: center;
+      margin-top: 0;
+      padding: .25rem 0 .25rem 1.1rem;
+      border-top: 0;
+      border-left: 1px solid var(--border);
+      word-break: keep-all;
+      overflow-wrap: normal;
+      line-height: 1.55;
+    }
+    .budget-hero-diagnostic strong { white-space: nowrap; }
+    @media (max-width: 700px) {
+      .budget-hero {
+        display: block;
+      }
+      .budget-hero-diagnostic {
+        margin-top: .55rem;
+        padding: .55rem 0 0;
+        border-left: 0;
+        border-top: 1px solid var(--border);
+      }
     }

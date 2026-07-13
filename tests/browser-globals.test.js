@@ -119,3 +119,43 @@ test('shared UI visual tokens cover core surfaces and controls', () => {
   assert.match(css, /:where\(button, input, select, textarea, a\):focus-visible/);
   assert.match(css, /html\.dark \.btn-primary/);
 });
+
+test('budget result callouts and layout use the compact surface system', () => {
+  const css = fs.readFileSync(path.join(ROOT, 'css/style.css'), 'utf8');
+  const ui = fs.readFileSync(path.join(ROOT, 'js/ui.js'), 'utf8');
+
+  assert.match(ui, /class="budget-warning" role="status"/);
+  assert.match(css, /\.budget-warning\s*\{[\s\S]*background:\s*var\(--surface-subtle\)/);
+  assert.match(css, /\.budget-inline-box\s*\{[\s\S]*padding:\s*1\.25rem/);
+  assert.match(css, /\.budget-kpi-grid\s*\{[\s\S]*gap:\s*\.65rem/);
+  assert.match(css, /\.budget-hero-diagnostic\s*\{[\s\S]*grid-column:\s*2/);
+  assert.match(css, /grid-template-columns:\s*minmax\(0, 1fr\) minmax\(300px, \.9fr\)/);
+  assert.match(css, /\.budget-hero-diagnostic strong\s*\{\s*white-space:\s*nowrap/);
+});
+
+test('budget project table reveals additional candidates on demand', () => {
+  const css = fs.readFileSync(path.join(ROOT, 'css/style.css'), 'utf8');
+  const ui = fs.readFileSync(path.join(ROOT, 'js/ui.js'), 'utf8');
+
+  assert.match(ui, /function toggleBudgetMore\(button\)/);
+  assert.match(ui, /budget-extra-row hidden/);
+  assert.match(ui, /class="budget-more-btn" aria-expanded="false"/);
+  assert.match(ui, /budget-more-label">더 보기/);
+  assert.match(css, /\.budget-more-btn\s*\{/);
+});
+
+test('budget project duration is rounded to at most two decimals', () => {
+  const ui = fs.readFileSync(path.join(ROOT, 'js/ui.js'), 'utf8');
+
+  assert.match(ui, /projectYears\.toFixed\(2\)/);
+  assert.match(ui, /\$\{projectYearsLabel\}년/);
+});
+
+test('home keyword chips fill the search input without auto-running a search', () => {
+  const ui = fs.readFileSync(path.join(ROOT, 'js/ui.js'), 'utf8');
+  const fn = ui.match(/function runExampleSearch\(kw\) \{[\s\S]*?\n    \}/)?.[0] || '';
+
+  assert.match(fn, /input\.value = kw/);
+  assert.match(fn, /input\.focus\(\)/);
+  assert.doesNotMatch(fn, /doSearch\(\)/);
+});

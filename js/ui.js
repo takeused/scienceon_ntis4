@@ -11,8 +11,11 @@
     // 홈 화면 예시 키워드 칩 → 검색창에 채우고 바로 검색
     function runExampleSearch(kw) {
       const input = document.getElementById('searchInput');
-      if (input) input.value = kw;
-      doSearch();
+      if (!input) return;
+      input.removeAttribute('readonly');
+      input.value = kw;
+      input.focus();
+      input.select();
     }
 
     // ============================================================
@@ -4210,6 +4213,16 @@ Respond ONLY with:
     }
 
     // ── 결과 대시보드 렌더링 ─────────────────────────────────────
+    function toggleBudgetMore(button) {
+      const table = button.closest('.budget-table-shell');
+      if (!table) return;
+      const expanded = button.getAttribute('aria-expanded') === 'true';
+      table.querySelectorAll('.budget-extra-row').forEach(row => row.classList.toggle('hidden', expanded));
+      button.setAttribute('aria-expanded', String(!expanded));
+      button.querySelector('.budget-more-label').textContent = expanded ? '더 보기' : '접기';
+      button.querySelector('iconify-icon').setAttribute('icon', expanded ? 'solar:alt-arrow-down-linear' : 'solar:alt-arrow-up-linear');
+    }
+
     function renderBudgetDashboard(projName, durationYears, selectedItems, budgetRange) {
       // null 체크 — runBudgetEstimation에서 이미 처리되므로 여기서는 조용히 리턴
       if (!budgetRange) return;
@@ -4249,7 +4262,7 @@ Respond ONLY with:
         warningBanners.push(`⚠️ 수행기간 완결성 ${Math.round(budgetRange.periodCompleteness * 100)}% — 연간 환산 오차 가능성이 있습니다.`);
       }
       const warningHTML = warningBanners.length
-        ? `<div style="background:#fff7ed; border:1px solid #fed7aa; border-radius:0.75rem; padding:0.875rem 1rem; margin-bottom:1.25rem; font-size:0.8rem; color:#92400e; line-height:1.8;">
+        ? `<div class="budget-warning" role="status">
             ${warningBanners.map(w => `<div>${w}</div>`).join('')}
            </div>`
         : '';
@@ -4258,7 +4271,11 @@ Respond ONLY with:
       // projNm에는 NTIS 검색 하이라이트 태그(<span class="search_word">)가 포함될 수 있으므로 제거
       const stripTags = (html) => (html || '').replace(/<[^>]*>/g, '');
 
-      const tableHTML = selectedItems.map((item) => {
+      const tableHTML = selectedItems.map((item, itemIndex) => {
+        const projectYears = Number(item.projYrs);
+        const projectYearsLabel = Number.isFinite(projectYears)
+          ? projectYears.toFixed(2).replace(/\.00$/, '').replace(/(\.\d)0$/, '$1')
+          : '';
         const simDisplay = item.similarity !== null
           ? `<div style="font-size:0.75rem; font-weight:600; color:#374151; white-space:nowrap;">${item.similarity}점</div>
              <div class="budget-score-bar"><div class="budget-score-fill" style="width:${item.similarity}%"></div></div>`
@@ -4289,15 +4306,23 @@ Respond ONLY with:
         const reason = escHtml(item.aiReason || '-');
 
         return `
-        <tr>
+        <tr class="${itemIndex >= 3 ? 'budget-extra-row hidden' : ''}">
           <td><div style="display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; line-height:1.4; max-width:300px;">${nameCell}</div></td>
           <td style="white-space:nowrap; font-weight:700; color:var(--accent);">${fmtBudget(item.annualBudget)}${sourceTag}</td>
-          <td style="white-space:nowrap; color:#6b7280;">${item.prdStart || '?'}~${item.prdEnd || '?'}${item.projYrs ? ` (${item.projYrs}년)` : ''}</td>
+          <td style="white-space:nowrap; color:#6b7280;">${item.prdStart || '?'}~${item.prdEnd || '?'}${projectYearsLabel ? ` (${projectYearsLabel}년)` : ''}</td>
           <td><span style="display:inline-block; max-width:120px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; vertical-align:bottom;" title="${escAttr(stripTags(item.perfOrg) || '')}">${org}</span></td>
           <td style="white-space:nowrap;">${simDisplay}</td>
           <td><span style="display:inline-block; max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; vertical-align:bottom; font-size:0.75rem; color:#6b7280;" title="${escAttr(item.aiReason || '')}">${reason}</span></td>
         </tr>`;
       }).join('');
+      const extraItemCount = Math.max(0, selectedItems.length - 3);
+      const moreItemsHTML = extraItemCount > 0
+        ? `<button type="button" class="budget-more-btn" aria-expanded="false" onclick="toggleBudgetMore(this)">
+             <iconify-icon icon="solar:alt-arrow-down-linear" width="15"></iconify-icon>
+             <span class="budget-more-label">더 보기</span>
+             <span class="budget-more-count">${extraItemCount}건</span>
+           </button>`
+        : '';
 
       const logHTML = budgetLog.map(l =>
         `<div class="budget-log-line"><span class="budget-log-icon">${l.icon}</span><span>${escHtml(l.msg)}</span></div>`
@@ -4430,7 +4455,8 @@ Respond ONLY with:
           대표 유사과제 ${budgetRange.weightedAvg !== null ? 'AI 선정' : '통계 기반'} Top-${selectedItems.length}
           <span class="muted">· 연구비 분포는 전체 ${budgetRange.n}건 기준</span>
         </div>
-        <div style="overflow-x:auto;">
+        <div class="budget-table-shell">
+          <div style="overflow-x:auto;">
           <table class="budget-table">
             <thead>
               <tr>
@@ -4439,6 +4465,8 @@ Respond ONLY with:
             </thead>
             <tbody>${tableHTML}</tbody>
           </table>
+          </div>
+          ${moreItemsHTML}
         </div>
 
         ${methodHtml}

@@ -596,8 +596,52 @@
       font-size: 0.76rem;
       line-height: 1.55;
       color: #6b7280;
+      min-width: 0;
+      word-break: keep-all;
     }
     .budget-hero-diagnostic strong { color: #374151; font-weight: 700; }
+    .budget-diagnostic-title {
+      color: #667085;
+      font-size: .7rem;
+      font-weight: 700;
+      letter-spacing: .01em;
+      white-space: nowrap;
+    }
+    .budget-diagnostic-main {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: .28rem .45rem;
+      margin-top: .12rem;
+      color: #475467;
+      line-height: 1.35;
+    }
+    .budget-diagnostic-main span {
+      white-space: nowrap;
+    }
+    .budget-diagnostic-badge {
+      display: inline-flex;
+      align-items: center;
+      width: fit-content;
+      border-radius: 999px;
+      padding: .12rem .48rem;
+      border: 1px solid #e5e7eb;
+      background: #f9fafb;
+      font-size: .72rem;
+      line-height: 1.35;
+      white-space: nowrap;
+    }
+    .budget-diagnostic-badge.is-high { color: #b42318; background: #fff6f5; border-color: #fecdca; }
+    .budget-diagnostic-badge.is-medium { color: #b54708; background: #fffcf5; border-color: #fedf89; }
+    .budget-diagnostic-badge.is-low { color: #344054; background: #f8fafc; border-color: #e4e7ec; }
+    .budget-diagnostic-copy {
+      margin-top: .18rem;
+      color: #667085;
+      font-size: .72rem;
+      line-height: 1.45;
+      word-break: keep-all;
+      overflow-wrap: anywhere;
+    }
     .budget-section-title {
       font-size: 0.95rem; font-weight: 700; color: #111;
       display: flex; align-items: center; gap: 0.45rem;
@@ -621,6 +665,10 @@
     html.dark .budget-hero-diagnostic { color: #9ca3af; }
     html.dark .budget-hero-diagnostic { border-top-color: #2a2a2a; }
     html.dark .budget-hero-diagnostic strong { color: #e5e7eb; }
+    html.dark .budget-diagnostic-title,
+    html.dark .budget-diagnostic-copy { color: #9ca3af; }
+    html.dark .budget-diagnostic-main { color: #d1d5db; }
+    html.dark .budget-diagnostic-badge { background: #1f1f1f; border-color: #333; }
     html.dark .budget-chip { background: #1f1f1f; border-color: #333; color: #d1d5db; }
     html.dark .budget-scale-btn { background: #161616; border-color: #2a2a2a; }
     html.dark .budget-scale-btn.is-active { background: #1f1f1f; border-color: #f5f5f5; }
@@ -819,17 +867,6 @@
     @media (max-width: 640px) {
       .budget-scale-group { grid-template-columns: 1fr; }
     }
-    /* 연구기간(연차) 선택 */
-    .budget-year-group { display: inline-flex; gap: 4px; }
-    .budget-year-btn {
-      padding: 5px 12px; border-radius: 8px; font-size: 0.8rem; font-weight: 600;
-      border: 1.5px solid #e5e7eb; background: #fff; color: #6b7280; cursor: pointer;
-      transition: all 0.15s;
-    }
-    .budget-year-btn:hover { border-color: #bbb; }
-    .budget-year-btn.is-active { border-color: #111; background: #111; color: #fff; }
-    html.dark .budget-year-btn { background: #161616; border-color: #2a2a2a; color: #aaa; }
-    html.dark .budget-year-btn.is-active { background: #f5f5f5; border-color: #f5f5f5; color: #111; }
     .budget-step-bar {
       display: flex; gap: 4px; margin-bottom: 1.5rem;
     }
@@ -1025,15 +1062,13 @@
     .btn-primary,
     .btn-analysis,
     .db-btn.active,
-    .budget-ladder-chip.is-active,
-    .budget-year-btn.is-active {
+    .budget-ladder-chip.is-active {
       background: var(--graphite) !important;
       border-color: var(--graphite) !important;
     }
     .btn-primary:hover,
     .btn-analysis:hover,
-    .budget-ladder-chip.is-active:hover,
-    .budget-year-btn.is-active:hover {
+    .budget-ladder-chip.is-active:hover {
       background: var(--graphite-hover) !important;
       border-color: var(--graphite-hover) !important;
     }
@@ -1539,7 +1574,9 @@
       grid-row: 1 / span 3;
       align-self: stretch;
       display: flex;
-      align-items: center;
+      flex-direction: column;
+      justify-content: center;
+      align-items: flex-start;
       margin-top: 0;
       padding: .25rem 0 .25rem 1.1rem;
       border-top: 0;
@@ -1548,12 +1585,14 @@
       overflow-wrap: normal;
       line-height: 1.55;
     }
-    .budget-hero-diagnostic strong { white-space: nowrap; }
+    .budget-hero-diagnostic strong,
+    .budget-hero-diagnostic span { white-space: nowrap; }
     @media (max-width: 700px) {
       .budget-hero {
         display: block;
       }
       .budget-hero-diagnostic {
+        align-items: flex-start;
         margin-top: .55rem;
         padding: .55rem 0 0;
         border-left: 0;

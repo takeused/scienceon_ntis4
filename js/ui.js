@@ -3876,8 +3876,7 @@ Keep it under 80 Korean characters. No preamble.`;
       if (!hasAIAccess()) {
         // AI 서버 미설정 시 입력값을 그대로 키워드로 사용
         addBudgetLog('⚠️', 'AI 서버 미설정 → 과제명 기반 기본 검색');
-        const words = projName.split(/[\s,]+/).filter(w => w.length >= 2).slice(0, 4);
-        return words.length ? [words.join(' ')] : [projName];
+        return buildBudgetSearchKeywords(projName, extractKeywordsManual(projName));
       }
 
       const systemPrompt = `You are a Korean R&D project search expert. Generate NTIS (National Science and Technology Information Service) search keywords.
@@ -3921,16 +3920,16 @@ Respond ONLY with:
       // 관대한 복구 파싱(콤마 누락 등) → 실패 시 "..." 문자열 직접 추출 → 수동 분절
       const parsed = lenientJSONParse(raw);
       if (Array.isArray(parsed?.keywords) && parsed.keywords.length) {
-        return parsed.keywords.map(k => String(k || '').trim()).filter(Boolean).slice(0, 3);
+        return buildBudgetSearchKeywords(projName, parsed.keywords.map(k => String(k || '').trim()).filter(Boolean).slice(0, 3));
       }
       const salvaged = [...raw.matchAll(/"([^"\n]{2,40})"/g)].map(m => m[1])
         .filter(s => s !== 'keywords' && /[가-힣A-Za-z]/.test(s)).slice(0, 3);
       if (salvaged.length) {
         addBudgetLog('⚠️', `AI 키워드 JSON 복구 실패 → 문자열 직접 추출 (${salvaged.join(', ')})`);
-        return salvaged;
+        return buildBudgetSearchKeywords(projName, salvaged);
       }
       addBudgetLog('⚠️', 'AI 키워드 JSON 파싱 실패 → 수동 분절 검색으로 전환');
-      return extractKeywordsManual(projName);
+      return buildBudgetSearchKeywords(projName, extractKeywordsManual(projName));
     }
 
     // AI 미설정 시 수동 키워드 추출 (최대한 쪼개서 NTIS 검색 유도)
@@ -3958,8 +3957,56 @@ Respond ONLY with:
       return [...new Set(results)].slice(0, 4);
     }
 
+    // 적정 연구비는 검색어가 조금만 좁아져도 표본이 급격히 줄어든다.
+    // AI 키워드 3개가 과제명 세부 표현에 갇히지 않도록 상위 도메인 앵커를 함께 검색한다.
+    function buildBudgetSearchKeywords(projName, seedKeywords = []) {
+      const text = String(projName || '').replace(/\s+/g, ' ').trim();
+      const compact = text.replace(/\s+/g, '');
+      const seeds = Array.isArray(seedKeywords) ? seedKeywords : [];
+      const stop = new Set(['개발','연구','고도화','구축','플랫폼','시스템','기반','기술','사업','과제','이용한','활용한','위한']);
+      const anchors = [];
+      const addAnchor = (kw) => {
+        if (kw && !anchors.includes(kw)) anchors.push(kw);
+      };
+
+      [
+        [/인공지능|(^|[^A-Za-z])AI([^A-Za-z]|$)|Artificial\s*Intelligence/i, '인공지능'],
+        [/재난안전|재난\s*안전|재난/, '재난안전'],
+        [/디지털\s*트윈|디지털트윈/i, '디지털트윈'],
+        [/양자\s*컴퓨팅|양자컴퓨팅/i, '양자컴퓨팅'],
+        [/(이차|2차)\s*전지|배터리/i, '이차전지'],
+        [/자율\s*주행|자율주행/i, '자율주행'],
+        [/수소\s*에너지|수소에너지/i, '수소에너지'],
+      ].forEach(([pattern, keyword]) => {
+        if (pattern.test(text) || pattern.test(compact)) addAnchor(keyword);
+      });
+
+      const tokens = text.split(/[\s,·/()_-]+/)
+        .map(token => token.replace(/(을|를|은|는|이|가|의|과|와|로|으로)$/u, ''))
+        .filter(token => token.length >= 2 && !stop.has(token));
+      tokens.slice(0, 3).forEach(addAnchor);
+
+      const expanded = [];
+      const add = (kw) => {
+        const normalized = String(kw || '').replace(/\s+/g, ' ').trim();
+        if (!normalized || normalized.length < 2) return;
+        if (!expanded.includes(normalized)) expanded.push(normalized);
+      };
+
+      seeds.forEach(add);
+      if (anchors.length >= 2) add(anchors.slice(0, 2).join(' '));
+      anchors.forEach(add);
+      add(text);
+
+      const result = expanded.slice(0, 6);
+      if (result.length > seeds.filter(Boolean).length) {
+        addBudgetLog('🔎', `표본 보강 검색어 추가: ${result.slice(seeds.filter(Boolean).length).join(', ')}`);
+      }
+      return result.length ? result : [text || String(seedKeywords?.[0] || '')].filter(Boolean);
+    }
+
     // ── Step 2: NTIS 과제 수집 ──────────────────────────────────
-    async function fetchNTISForBudget(keywords, durationYears, rndPhase, bizSect, displayCnt = 100) {
+    async function fetchNTISForBudget(keywords, rndPhase, bizSect, displayCnt = 100) {
       if (!STATE.ntisKey) throw new Error('NTIS API 인증키가 필요합니다. API 설정에서 입력해주세요.');
 
       // ACTIVE_PROXY='direct'(프록시 미감지) 시에도 Vercel 프록시로 폴백 시도
@@ -4145,8 +4192,7 @@ Respond ONLY with:
             const exactDuration = BudgetCore.durationYearsFromDates(prdStartRaw, prdEndRaw);
             const projYrs   = exactDuration || (hasPeriod ? Math.max(1, parseInt(prdEnd) - parseInt(prdStart) + 1) : 0);
 
-            // 수행기간 필터 (사용자 희망기간 ±1년, 기간 정보 없으면 통과)
-            if (durationYears > 0 && hasPeriod && Math.abs(projYrs - durationYears) > 1) continue;
+            // 수행기간은 연간 연구비 정규화에만 사용한다. 표본 축소를 막기 위해 기간 필터는 적용하지 않는다.
 
             // 연구개발단계 필터
             if (rndPhase && rndPhase !== '전체' && rndPhase !== 'ALL' && phase && !phase.includes(rndPhase)) continue;
@@ -4360,7 +4406,6 @@ Respond ONLY with:
                 note:'유사 과제 분포의 75백분위와 50~90백분위 범위를 사용' },
     };
     let _budgetScale    = 'medium';           // 현재 선택된 규모
-    let _budgetDuration = 1;                   // 현재 선택된 연구기간(연차)
     let _budgetPhase    = 'ALL';               // 비교할 연구개발단계
     let _budgetLastRun  = null;                // { projName, finalItems, distItems } — 재수집 없이 재산출용
     let _budgetRunSeq   = 0;                   // 늦게 끝난 이전 요청이 최신 결과를 덮지 않도록 하는 실행 번호
@@ -4378,15 +4423,16 @@ Respond ONLY with:
       _budgetRerunTimer = setTimeout(() => runBudgetEstimation(projName), 300);
     }
 
-    // 분석 이력이 있으면 NTIS 재검색 없이 산출·표시만 다시 한다 (규모·연차 변경 공용)
+    // 분석 이력이 있으면 NTIS 재검색 없이 산출·표시만 다시 한다 (규모 변경)
     function _recomputeBudgetDisplay(logMsg) {
       if (!(_budgetLastRun && Array.isArray(_budgetLastRun.finalItems) && _budgetLastRun.finalItems.length)) return;
       const dist = _budgetLastRun.distItems && _budgetLastRun.distItems.length
         ? _budgetLastRun.distItems : _budgetLastRun.finalItems;
       const range = calcBudgetRange(dist, _budgetScale, _budgetLastRun.finalItems);
       if (!range) return;
+      if (_budgetLastRun.filterSummary) range.filterSummary = _budgetLastRun.filterSummary;
       if (logMsg) budgetLog.push({ icon: '🔁', msg: logMsg });
-      renderBudgetDashboard(_budgetLastRun.projName, _budgetDuration, _budgetLastRun.finalItems, range);
+      renderBudgetDashboard(_budgetLastRun.projName, _budgetLastRun.finalItems, range);
     }
 
     // 규모 버튼 클릭 → 선택 갱신 + (분석 이력 있으면) 즉시 재산출
@@ -4397,16 +4443,6 @@ Respond ONLY with:
         b.classList.toggle('is-active', b.dataset.scale === key);
       });
       _recomputeBudgetDisplay(`과제 규모 변경 → ${BUDGET_SCALES[key].short} 기준 재산출`);
-    }
-
-    // 연구기간은 비교 과제 필터에도 사용된다. 변경 시 기존 표본을 재사용하지 않고 다시 분석한다.
-    function setBudgetDuration(years) {
-      const y = Math.max(1, parseInt(years) || 1);
-      _budgetDuration = y;
-      document.querySelectorAll('#budgetYearGroup .budget-year-btn').forEach(b => {
-        b.classList.toggle('is-active', parseInt(b.dataset.year) === y);
-      });
-      scheduleBudgetRerun(`연구기간 변경 → ${y}년 유사과제를 다시 수집`);
     }
 
     function setBudgetPhase(phase) {
@@ -4435,12 +4471,9 @@ Respond ONLY with:
       button.querySelector('iconify-icon').setAttribute('icon', expanded ? 'solar:alt-arrow-down-linear' : 'solar:alt-arrow-up-linear');
     }
 
-    function renderBudgetDashboard(projName, durationYears, selectedItems, budgetRange) {
+    function renderBudgetDashboard(projName, selectedItems, budgetRange) {
       // null 체크 — runBudgetEstimation에서 이미 처리되므로 여기서는 조용히 리턴
       if (!budgetRange) return;
-
-      const dYrs = parseInt(durationYears) || 1;
-      const totalMedian = budgetRange.median * dYrs;
 
       // ── 신뢰도 등급 UI 설정 ─────────────────────────────────────
       const confidenceCfg = {
@@ -4453,17 +4486,29 @@ Respond ONLY with:
       // ── 신뢰도 경고 배너 ────────────────────────────────────────
       const warningBanners = [];
       if (budgetRange.n < 5) {
-        warningBanners.push(`⚠️ 표본 ${budgetRange.n}건 — 통계적 대표성이 낮습니다. 키워드를 조정하거나 필터를 완화하여 재시도를 권장합니다.`);
+        warningBanners.push(`⚠️ 표본 ${budgetRange.n}건 — 통계적 대표성이 낮습니다. 검색어를 더 일반화하거나 연구개발단계 필터를 '전체 단계'로 완화해 재시도하세요.`);
       } else if (budgetRange.n < 12) {
-        warningBanners.push(`ℹ️ 표본 ${budgetRange.n}건 — 12건 미만으로 범위 추정 신뢰도가 다소 제한적입니다.`);
+        warningBanners.push(`ℹ️ 표본 ${budgetRange.n}건 — 원 검색결과가 아니라 유효 연구비·기간·연구개발단계·관련성 정제를 통과한 계산 표본입니다.`);
+      }
+      if (budgetRange.n < 12 && budgetRange.filterSummary) {
+        const fs = budgetRange.filterSummary;
+        const phaseLabel = fs.rndPhase && fs.rndPhase !== 'ALL' ? `${fs.rndPhase}연구` : '전체 단계';
+        warningBanners.push(`검색 ${fs.keywords}개 키워드 · 원수집 ${fs.raw}건 → 유효 연구비/IQR ${fs.cleaned}건 → 계산 ${fs.dist}건 (${phaseLabel}, 기간 필터 없음).`);
       }
       // 연구비 분포 폭은 결과를 막는 경고가 아니라 대표값 해석을 돕는 보조 진단으로 표시한다.
       const cvRounded = Math.round(budgetRange.cv);
-      const cvDiagnostic = budgetRange.cv >= 120
-        ? `분포 편차 <strong>매우 큼</strong> · 변동계수 ${cvRounded}% · 이기종 과제 혼재 가능성이 있어 권장 범위와 유사과제를 함께 확인하세요.`
+      const cvCfg = budgetRange.cv >= 120
+        ? { tone: 'high', label: '매우 큼', note: '이기종 과제 혼재 가능성. 권장 범위와 유사과제를 함께 확인하세요.' }
         : budgetRange.cv >= 80
-          ? `분포 편차 <strong>다소 큼</strong> · 변동계수 ${cvRounded}% · 단일 대표값보다 권장 범위를 함께 해석하세요.`
-          : `분포 편차 <strong>참고 범위</strong> · 변동계수 ${cvRounded}%`;
+          ? { tone: 'medium', label: '다소 큼', note: '단일 대표값보다 권장 범위를 함께 해석하세요.' }
+          : { tone: 'low', label: '참고 범위', note: '대표값 해석에 큰 제약은 낮습니다.' };
+      const cvDiagnostic = `
+        <div class="budget-diagnostic-title">분포 편차</div>
+        <div class="budget-diagnostic-main">
+          <strong class="budget-diagnostic-badge is-${cvCfg.tone}">${cvCfg.label}</strong>
+          <span>변동계수 ${cvRounded}%</span>
+        </div>
+        <div class="budget-diagnostic-copy">${cvCfg.note}</div>`;
       if (budgetRange.avgSimilarity !== null && budgetRange.avgSimilarity < 65) {
         warningBanners.push(`⚠️ AI 유사도 평균 ${budgetRange.avgSimilarity}점 — 유사과제 매칭 품질이 낮습니다. 과제명을 구체적으로 입력해 주세요.`);
       }
@@ -4555,9 +4600,7 @@ Respond ONLY with:
            <div class="budget-kpi-value" style="font-size:1.15rem;">${k.value}</div>
            <div class="budget-kpi-sub">${k.sub}</div>
          </div>`;
-      const totalKpi = dYrs > 1
-        ? kpiCard({ label: `총 연구비 참고값 (${dYrs}년)`, value: fmtBudget(totalMedian), sub: `연 시나리오 기준값 × ${dYrs}년` })
-        : '';
+      const totalKpi = '';
       const simChip = budgetRange.avgSimilarity !== null
         ? `<span class="budget-chip">유사도 평균 ${budgetRange.avgSimilarity}점</span>` : '';
 
@@ -4606,10 +4649,10 @@ Respond ONLY with:
         <details class="budget-method">
           <summary>📐 산출 방법·가정 보기</summary>
           <ol>
-            <li><strong>수집</strong> — AI 최적화 키워드(+과제명 분절 폴백)로 NTIS 과제 수집 (15년 이내 · 과제번호 중복 제거)</li>
+            <li><strong>수집</strong> — AI 최적화 키워드(+상위 도메인 앵커·과제명 분절 폴백)로 NTIS 과제 수집 (15년 이내 · 과제번호 중복 제거)</li>
             <li><strong>연간 정규화</strong> — 당해연도 연구비 우선, 없으면 총·정부연구비를 실제 수행월수로 연간화 (기간 미상 총액은 저신뢰 표본)</li>
             <li><strong>현재가치 보정</strong> — 수행 중간연도 기준 연 ${(BUDGET_ESC_RATE * 100).toFixed(0)}% 상승률로 올해 가치 환산 (최대 ${BUDGET_ESC_CAP}년)</li>
-            <li><strong>정제</strong> — 유효 표본 8건 이상일 때 IQR×1.5 이상치 제거(표본 급감 시 ×3 완화) + 관련성 게이트</li>
+            <li><strong>정제</strong> — 수행기간은 필터로 쓰지 않고 연간 환산에만 사용. 유효 표본 8건 이상일 때 IQR×1.5 이상치 제거(표본 급감 시 ×3 완화) + 관련성 게이트</li>
             <li><strong>AI 유사도 평가</strong> — 연구비를 숨긴 채 기술 55% / 규모·단계 30% / 최신성 15%로 대표 과제 선정</li>
             <li><strong>규모 시나리오</strong> — 소형 35백분위(20~50) / 중형 중앙값(25~75) / 대형 75백분위(50~90), 임의 배수 없음</li>
           </ol>
@@ -4697,14 +4740,13 @@ Respond ONLY with:
       _mountBudgetInline(); // 결과를 인라인 영역에 유지
 
       // 보고서 생성을 위해 결과 저장
-      _budgetReportData = { projName, durationYears: dYrs, selectedItems, budgetRange };
+      _budgetReportData = { projName, selectedItems, budgetRange };
     }
 
     // Removed: report draft modal is no longer part of the UI.
-    function generateBudgetReportText({ projName, durationYears, selectedItems, budgetRange }) {
+    function generateBudgetReportText({ projName, selectedItems, budgetRange }) {
       const today = new Date();
       const dateStr = `${today.getFullYear()}년 ${today.getMonth()+1}월 ${today.getDate()}일`;
-      const dYrs = parseInt(durationYears) || 1;
       const br = budgetRange;
       const stripTags = (s) => (s || '').replace(/<[^>]*>/g, '');
 
@@ -4750,8 +4792,9 @@ ${'─'.repeat(64)}
     - 목표 후보: 30~50건 확보
 
   [Step 2] 정책 메타데이터 필터링
-    - 최근 15년 이내 과제로 한정하고 수행기간 ±1년 필터 적용
+    - 최근 15년 이내 과제로 한정
     - 연구개발단계 선택 시 동일 단계 과제로 동질성 강화
+    - 수행기간은 표본 필터가 아니라 연간 연구비 정규화에만 사용
 
   [Step 3] 연간 예산 정규화 + IQR 이상치 제거
     - 당해연도 연구비 우선, 없으면 총·정부연구비 ÷ 실제 수행월수로 연간 환산
@@ -4776,8 +4819,6 @@ ${'─'.repeat(64)}
   ○ 연간 비교기준 예산 (${br.scaleLabel} 시나리오) : ${fmtBudget(br.median)}
   ○ ${rangeDesc}
   ○ ${weightedDesc}
-  ○ 총 연구비 추정 (${dYrs}년 기준)  : ${fmtBudget(br.median * dYrs)}
-     - 범위: ${fmtBudget(br.min * dYrs)} ~ ${fmtBudget(br.max * dYrs)}
 
   [분석 품질 지표]
   ○ 유효 표본 수   : ${br.n}건
@@ -4804,9 +4845,9 @@ ${'─'.repeat(64)}
      과제 고유 특성(신규 장비 구축, 대규모 실증 등)을 감안하여
      ${rangeDesc.split('범위:').pop().trim()} 내에서 조정하는 것을 권장합니다.
 
-  ○ 총 연구비 편성 참고값: ${fmtBudget(br.median * dYrs)} (${dYrs}년 균등 집행 가정)
-     사업 특성에 따라 초기 집중형 또는 균등 배분형 연차 계획을
-     별도 수립하시기 바랍니다.
+  ○ 총 연구비 편성 참고값
+     본 모듈은 연간 비교기준 예산을 산출합니다. 총 연구비는 실제 사업기간,
+     장비·실증·인건비 투입 곡선에 맞춰 별도 편성하시기 바랍니다.
 
   ○ 유의 사항
      - 변동계수 ${Math.round(br.cv)}%: ${br.cv >= 80 ? '편차가 높아 단일 대표값 사용 시 주의가 필요합니다.' : '분포 폭은 결과 해석 시 보조 지표로 사용합니다.'}
@@ -4836,7 +4877,6 @@ ${'='.repeat(64)}
     async function runBudgetEstimation(projName) {
       const runSeq = ++_budgetRunSeq;
       _budgetActiveProject = projName;
-      const durationYears  = _budgetDuration;
       const rndPhase       = _budgetPhase;
       const bizSect        = "ALL";
 
@@ -4869,14 +4909,14 @@ ${'='.repeat(64)}
         // ── Step 2: NTIS 과제 수집 (3단계 Fallback 전략) ───────────
         setBudgetStep(2);
         addBudgetLog('📡', 'Step 2: NTIS 과제 데이터 수집 시작 (1단계: AI 키워드)');
-        let rawItems = await fetchNTISForBudget(keywords, durationYears, rndPhase, bizSect);
+        let rawItems = await fetchNTISForBudget(keywords, rndPhase, bizSect);
         if (runSeq !== _budgetRunSeq) return;
         
         // 2단계: 수동 분절 검색 (AI 결과가 부족할 때)
         if (rawItems.length < 5) {
           addBudgetLog('⚠️', '결과가 부족합니다. 2단계: 과제명 핵심어 분절 검색을 시도합니다...');
           const fallbackKeywords = extractKeywordsManual(projName);
-          const secondItems = await fetchNTISForBudget(fallbackKeywords, durationYears, rndPhase, bizSect);
+          const secondItems = await fetchNTISForBudget(fallbackKeywords, rndPhase, bizSect);
           if (runSeq !== _budgetRunSeq) return;
           
           // 중복 제거 및 합치기
@@ -4898,8 +4938,7 @@ ${'='.repeat(64)}
             .filter(word => word.length >= 2 && !broadStop.has(word))
             .sort((a, b) => b.length - a.length)[0];
           const superBroadKeywords = [broadToken || projName.trim()];
-          // durationYears=0으로 넘겨서 기간 필터 사실상 해제
-          rawItems = await fetchNTISForBudget(superBroadKeywords, 0, 'ALL', 'ALL', 100);
+          rawItems = await fetchNTISForBudget(superBroadKeywords, 'ALL', 'ALL', 100);
           if (runSeq !== _budgetRunSeq) return;
         }
 
@@ -4989,10 +5028,21 @@ ${'='.repeat(64)}
           return;
         }
 
+        budgetRange.filterSummary = {
+          raw: rawItems.length,
+          cleaned: cleanedItems.length,
+          dist: distItems.length,
+          keywords: keywords.length,
+          rndPhase,
+        };
+        if (budgetRange.n < 12) {
+          addBudgetLog('ℹ️', `표본 축소 진단: 원수집 ${rawItems.length}건 → 유효 연구비/IQR ${cleanedItems.length}건 → 계산 표본 ${budgetRange.n}건`);
+        }
+
         addBudgetLog('🎉', `분석 완료! ${budgetRange.scaleLabel} 시나리오 연간 비교기준: ${fmtBudget(budgetRange.median)}`);
         // 규모 변경 시 NTIS 재검색 없이 재산출할 수 있도록 수집·평가 결과를 보관
-        _budgetLastRun = { projName, finalItems, distItems };
-        renderBudgetDashboard(projName, durationYears, finalItems, budgetRange);
+        _budgetLastRun = { projName, finalItems, distItems, filterSummary: budgetRange.filterSummary };
+        renderBudgetDashboard(projName, finalItems, budgetRange);
 
       } catch (err) {
         console.error('[Budget]', err);

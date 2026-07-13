@@ -134,7 +134,40 @@ test('budget result callouts and layout use the compact surface system', () => {
   assert.match(css, /\.budget-kpi-grid\s*\{[\s\S]*gap:\s*\.65rem/);
   assert.match(css, /\.budget-hero-diagnostic\s*\{[\s\S]*grid-column:\s*2/);
   assert.match(css, /grid-template-columns:\s*minmax\(0, 1fr\) minmax\(300px, \.9fr\)/);
-  assert.match(css, /\.budget-hero-diagnostic strong\s*\{\s*white-space:\s*nowrap/);
+  assert.match(ui, /budget-diagnostic-main/);
+  assert.match(css, /\.budget-diagnostic-badge\s*\{/);
+  assert.match(css, /\.budget-diagnostic-copy\s*\{/);
+});
+
+test('budget search keywords preserve broad domain anchors for larger samples', () => {
+  const context = createBrowserContext();
+  loadScript(context, 'js/state.js');
+  loadScript(context, 'js/commerce-score.js');
+  loadScript(context, 'js/budget-core.js');
+  loadScript(context, 'js/ui.js');
+
+  const keywords = context.buildBudgetSearchKeywords(
+    '인공지능을 이용한 재난안전 회복력 플랫폼 기술개발',
+    ['AI 재난안전 플랫폼', '재난안전 회복력']
+  );
+
+  assert.ok(keywords.includes('인공지능'));
+  assert.ok(keywords.includes('재난안전'));
+  assert.ok(keywords.some(keyword => keyword.includes('인공지능') && keyword.includes('재난안전')));
+  assert.ok(keywords.length <= 6);
+});
+
+test('budget estimation does not filter comparable projects by selected duration', () => {
+  const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+  const css = fs.readFileSync(path.join(ROOT, 'css/style.css'), 'utf8');
+  const ui = fs.readFileSync(path.join(ROOT, 'js/ui.js'), 'utf8');
+
+  assert.doesNotMatch(html, /budgetYearGroup/);
+  assert.doesNotMatch(html, /setBudgetDuration/);
+  assert.doesNotMatch(css, /budget-year-btn/);
+  assert.doesNotMatch(ui, /function setBudgetDuration/);
+  assert.doesNotMatch(ui, /Math\.abs\(projYrs - durationYears\)/);
+  assert.match(ui, /수행기간은 연간 연구비 정규화에만 사용/);
 });
 
 test('budget project table reveals additional candidates on demand', () => {

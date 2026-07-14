@@ -72,8 +72,15 @@ export default {
         body: request.method === 'GET' ? undefined : request.body,
         redirect: 'error',
       });
-    } catch {
-      return json(502, { error: 'The internal API proxy is unavailable' });
+    } catch (error) {
+      // Keep the public failure non-sensitive, but retain the platform error
+      // category so a temporary-tunnel outage can be diagnosed without
+      // exposing the origin URL or the shared secret.
+      return json(502, {
+        error: 'The internal API proxy is unavailable',
+        code: 'ORIGIN_FETCH_FAILED',
+        detail: error instanceof Error && error.message ? error.message : 'fetch failed',
+      });
     }
 
     const responseHeaders = new Headers(upstream.headers);

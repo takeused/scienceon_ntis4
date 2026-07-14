@@ -863,7 +863,12 @@
       } catch (err) {
         resultEl.className = 'token-result-err';
         const msg = err.message || '';
-        if (err.name === 'TypeError' && msg.includes('fetch')) {
+        if (!IS_LOCAL_HOST && ACTIVE_PROXY === 'worker') {
+          resultEl.innerHTML = `
+        외부 연결 오류 — 이 PC의 프록시는 정상이나, Cloudflare Worker에서 이 PC로 연결하는 터널이 아직 준비되지 않았습니다.<br><br>
+        <strong>조치 중:</strong> 외부 터널 주소를 설정한 뒤 다시 시도하세요.
+      `;
+        } else if (err.name === 'TypeError' && msg.includes('fetch')) {
           resultEl.innerHTML = `
         연결 오류 — 프록시 서버 또는 API 서버에 접속할 수 없습니다.<br><br>
         <strong>해결:</strong> 터미널에서 <code style="background:#1a1a1a;padding:3px 6px;border-radius:4px;display:inline-block;margin-top:4px;">node proxy-server.js</code> 실행 확인

@@ -3,16 +3,21 @@
     // ============================================================
 
     (async function init() {
+      if (!BROWSER_API_MODE) {
+        ['sc_client_id', 'sc_token', 'sc_refresh_token', 'sc_token_expire', 'sc_api_key', 'sc_mac_addr', 'sc_ntis_key', 'sc_cerebras_key']
+          .forEach(key => localStorage.removeItem(key));
+      }
       // 과거 버전이 소스 기본값을 localStorage에 복사했을 수 있으므로
       // 민감값을 1회 제거한다. 이후에는 서버 환경변수 또는 수동 설정만 사용한다.
       // Browser settings are the local-development source of API credentials.
       // Explicitly saved values take precedence over js/state.js defaults.
-      const browserValue = (storageKey, configKey) =>
-        localStorage.getItem(storageKey) || DEFAULTS[configKey] || '';
+      const browserValue = (storageKey, configKey) => BROWSER_API_MODE
+        ? (localStorage.getItem(storageKey) || DEFAULTS[configKey] || '')
+        : '';
       STATE.clientId    = browserValue('sc_client_id', 'clientId');
-      STATE.token       = localStorage.getItem('sc_token') || '';
-      STATE.refreshToken= localStorage.getItem('sc_refresh_token') || '';
-      STATE.tokenExpire = localStorage.getItem('sc_token_expire') || '';
+      STATE.token       = BROWSER_API_MODE ? (localStorage.getItem('sc_token') || '') : '';
+      STATE.refreshToken= BROWSER_API_MODE ? (localStorage.getItem('sc_refresh_token') || '') : '';
+      STATE.tokenExpire = BROWSER_API_MODE ? (localStorage.getItem('sc_token_expire') || '') : '';
       STATE.apiKey      = browserValue('sc_api_key', 'apiKey');
       STATE.macAddr     = browserValue('sc_mac_addr', 'macAddr');
       STATE.ntisKey     = browserValue('sc_ntis_key', 'ntisKey');

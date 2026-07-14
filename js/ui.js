@@ -133,7 +133,7 @@
       } catch { /* Vercel 접근 실패 */ }
 
       // 3순위: Cloudflare Worker (NTIS IP 차단될 수 있음)
-      if (!CF_WORKER_BASE.includes('YOUR_CF_SUBDOMAIN')) {
+      if (CF_WORKER_BASE) {
         try {
           const res = await fetch(`${CF_WORKER_BASE}/health`, { signal: AbortSignal.timeout(4000) });
           if (res.ok) {
@@ -717,7 +717,7 @@
           const accounts = encryptNTISAccounts(apiKey, macAddr);
           if (!accounts) return;
           url = `${TOKEN_URL_DIRECT}?accounts=${encodeURIComponent(accounts)}&client_id=${encodeURIComponent(clientId)}`;
-        } else if (ACTIVE_PROXY === 'worker') {
+        } else if (BROWSER_API_MODE && ACTIVE_PROXY === 'worker') {
           if (!clientId || !apiKey || !macAddr) return;
           const accounts = encryptNTISAccounts(apiKey, macAddr);
           if (!accounts) return;
@@ -738,14 +738,16 @@
         if (data.access_token) {
           if (data.client_id) {
             STATE.clientId = data.client_id;
-            localStorage.setItem('sc_client_id', STATE.clientId);
+            if (BROWSER_API_MODE) localStorage.setItem('sc_client_id', STATE.clientId);
           }
           STATE.token       = data.access_token;
           STATE.tokenExpire = data.access_token_expire || '';
           if (data.refresh_token) STATE.refreshToken = data.refresh_token;
-          localStorage.setItem('sc_token', STATE.token);
-          localStorage.setItem('sc_token_expire', STATE.tokenExpire);
-          localStorage.setItem('sc_refresh_token', STATE.refreshToken);
+          if (BROWSER_API_MODE) {
+            localStorage.setItem('sc_token', STATE.token);
+            localStorage.setItem('sc_token_expire', STATE.tokenExpire);
+            localStorage.setItem('sc_refresh_token', STATE.refreshToken);
+          }
           updateProxyStatus();
           scheduleTokenRefresh();   // ⏰ 자동 갱신 예약
           updateTokenExpireDisplay();
@@ -2075,9 +2077,9 @@ Respond ONLY with this JSON structure:
 
         // NTIS API 호출
         const fetchNTIS = async (rowCount = 1) => {
-          if (!STATE.ntisKey) return null;
+          if (!STATE.ntisKey && !(PROXY_AVAILABLE && STATE.ntisConfigured)) return null;
           try {
-            const url = `${getProxyBase()}/ntis?apprvKey=${STATE.ntisKey}&collection=project&query=${encodeURIComponent(query)}&displayCnt=${rowCount}&startPosition=1`;
+            const url = `${getProxyBase()}/ntis?collection=project&query=${encodeURIComponent(query)}&displayCnt=${rowCount}&startPosition=1`;
             const resp = await fetch(url, { signal: AbortSignal.timeout(5000) });
             const text = await resp.text();
             return new DOMParser().parseFromString(text, 'text/xml');
@@ -3383,7 +3385,7 @@ Respond ONLY with this JSON structure:
     let _relActiveCol = 'project';
 
     async function showRelated(pjtId, title) {
-      if (!STATE.ntisKey) {
+      if (!STATE.ntisKey && !(PROXY_AVAILABLE && STATE.ntisConfigured)) {
         showToast('NTIS 인증키가 필요합니다', 'warning');
         return;
       }
@@ -3775,7 +3777,7 @@ Respond ONLY with this JSON structure:
     }
 
     function openBudgetModal() {
-      if (!STATE.ntisKey) {
+      if (!STATE.ntisKey && !(PROXY_AVAILABLE && STATE.ntisConfigured)) {
         showToast('NTIS API 인증키가 필요합니다. API 설정에서 입력해주세요.', 'warning');
         return;
       }
@@ -4008,7 +4010,9 @@ Respond ONLY with:
 
     // ── Step 2: NTIS 과제 수집 ──────────────────────────────────
     async function fetchNTISForBudget(keywords, rndPhase, bizSect, displayCnt = 100) {
-      if (!STATE.ntisKey) throw new Error('NTIS API 인증키가 필요합니다. API 설정에서 입력해주세요.');
+      if (!STATE.ntisKey && !(PROXY_AVAILABLE && STATE.ntisConfigured)) {
+        throw new Error('NTIS API 인증키가 프록시 서버에 설정되어 있지 않습니다.');
+      }
 
       // ACTIVE_PROXY='direct'(프록시 미감지) 시에도 Vercel 프록시로 폴백 시도
       // VERCEL_BASE는 Vercel 도메인에서 ''(상대경로), 외부에서는 절대 URL

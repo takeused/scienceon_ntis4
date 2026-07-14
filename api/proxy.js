@@ -98,10 +98,8 @@ async function tryTokenRequest(clientId, encryptedBase64) {
 }
 
 function setCORS(res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
   res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,Content-Type,Authorization,Accept,Origin');
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Max-Age', '86400');
 }
 
@@ -191,9 +189,9 @@ module.exports = async (req, res) => {
   // ── /token
   if (pathname === '/token') {
     const { accounts } = q;
-    const client_id = process.env.SC_CLIENT_ID || q.client_id;
-    const api_key = process.env.SC_API_KEY || q.api_key;
-    const mac_address = process.env.SC_MAC_ADDR || q.mac_address;
+    const client_id = process.env.SC_CLIENT_ID || '';
+    const api_key = process.env.SC_API_KEY || '';
+    const mac_address = process.env.SC_MAC_ADDR || '';
     
     // 워커와 동일하게 accounts 전송 방식 지원
     if (accounts && client_id) {
@@ -303,8 +301,8 @@ module.exports = async (req, res) => {
 
   // ── /ntis
   if (pathname === '/ntis') {
-    const { apprvKey, collection, SRWR, searchWord, searchFd, startPosition, displayCnt, searchRnkn, addQuery, boostquery, naviCount } = q;
-    const serverKey = process.env.NTIS_API_KEY || apprvKey || '';
+    const { collection, SRWR, searchWord, searchFd, startPosition, displayCnt, searchRnkn, addQuery, boostquery, naviCount } = q;
+    const serverKey = process.env.NTIS_API_KEY || '';
     
     if (!serverKey) return jsonRes(res, 400, { error: 'NTIS_API_KEY 환경변수 또는 apprvKey 파라미터 필요' });
 
@@ -347,8 +345,8 @@ module.exports = async (req, res) => {
 
   // ── /ntis/connection
   if (pathname === '/ntis/connection') {
-    const { apprvKey, pjtId, collection, topN } = q;
-    const serverKey = process.env.NTIS_API_KEY || apprvKey || '';
+    const { pjtId, collection, topN } = q;
+    const serverKey = process.env.NTIS_API_KEY || '';
     if (!serverKey || !pjtId) return jsonRes(res, 400, { error: 'NTIS_API_KEY/apprvKey, pjtId 필요' });
     const params = new URLSearchParams({ apprvKey: serverKey, pjtId });
     if (collection) params.set('collection', collection);

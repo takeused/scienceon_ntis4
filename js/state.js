@@ -34,7 +34,9 @@
     // Development-only browser configuration. Fill these values locally while
     // working on the site, then move them back to server environment variables
     // before publishing.
-    const BROWSER_API_MODE = true;
+    // Public deployments must never accept API credentials from a browser.
+    // Set this to true only for an isolated local development session.
+    const BROWSER_API_MODE = window.__SCIENCEON_BROWSER_API_MODE__ === true;
     const BROWSER_API_CONFIG = Object.freeze({
       clientId: '',
       apiKey: '',
@@ -58,7 +60,11 @@
 
     // 외부 프록시 (로컬 전용 운영 시 미사용 — 변수 참조 오류 방지용 선언)
     const VERCEL_BASE    = '';
-    const CF_WORKER_BASE = 'https://YOUR_CF_SUBDOMAIN.workers.dev';
+    const IS_LOCAL_HOST = /^(localhost|127\.0\.0\.1)$/.test(window.location.hostname);
+    // In production, the Cloudflare Worker is mounted on this same hostname for
+    // the API-only routes. A custom value is useful for a preview environment.
+    const CF_WORKER_BASE = window.__SCIENCEON_EDGE_BASE
+      || ((!IS_LOCAL_HOST && /^https?:$/.test(window.location.protocol)) ? window.location.origin : '');
 
     // 현재 활성 프록시 ('local' | 'direct')
     let ACTIVE_PROXY = 'direct';

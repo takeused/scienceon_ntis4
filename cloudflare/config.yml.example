@@ -1,0 +1,9 @@
+# Prefer a remotely managed Tunnel in the Cloudflare dashboard for production.
+# This locally managed alternative is useful only when a file-based configuration is required.
+tunnel: REPLACE_WITH_TUNNEL_UUID
+credentials-file: C:\\Users\\USER\\.cloudflared\\REPLACE_WITH_TUNNEL_UUID.json
+
+ingress:
+  - hostname: origin-api.example.com
+    service: http://127.0.0.1:3737
+  - service: http_status:404

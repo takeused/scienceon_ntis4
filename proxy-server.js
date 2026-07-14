@@ -186,7 +186,6 @@ function readJSONBody(req, maxBytes = 1024 * 1024) {
 
 // ── CORS 헤더 ───────────────────────────────────────────────
 function setCORS(res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,Content-Type,Authorization,Accept,Origin');
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
@@ -438,8 +437,10 @@ const server = http.createServer(async (req, res) => {
 
     // ── /api  (ScienceON API Gateway)
     if (pathname === '/api') {
-      const qs   = parsed.search || '';
-      const path = `/openapicall.do${qs}`;
+      const params = new URLSearchParams(parsed.search || '');
+      // The registered server identity is never sent to a browser.
+      if (REGISTERED.clientId && !params.get('client_id')) params.set('client_id', REGISTERED.clientId);
+      const path = `/openapicall.do?${params.toString()}`;
       const r    = await httpsGet(API_HOST, path);
       const isXml = r.body.trim().startsWith('<');
       return sendRaw(res, r.status, r.body, isXml ? 'application/xml; charset=utf-8' : 'text/plain');
@@ -447,10 +448,10 @@ const server = http.createServer(async (req, res) => {
 
     // ── /ntis  (NTIS API)
     if (pathname === '/ntis') {
-      const { apprvKey, collection, SRWR, searchWord, searchFd,
+      const { collection, SRWR, searchWord, searchFd,
               startPosition, displayCnt, searchRnkn, addQuery, naviCount } = q;
 
-      const serverKey = process.env.NTIS_API_KEY || apprvKey || '';
+      const serverKey = process.env.NTIS_API_KEY || '';
       if (!serverKey) return sendJSON(res, 400, { error: 'NTIS_API_KEY 환경변수 또는 apprvKey 파라미터 필요' });
 
       const params = new URLSearchParams();
@@ -479,8 +480,8 @@ const server = http.createServer(async (req, res) => {
 
     // ── /ntis/connection
     if (pathname === '/ntis/connection') {
-      const { apprvKey, pjtId, collection, topN } = q;
-      const serverKey = process.env.NTIS_API_KEY || apprvKey || '';
+      const { pjtId, collection, topN } = q;
+      const serverKey = process.env.NTIS_API_KEY || '';
       if (!serverKey || !pjtId) return sendJSON(res, 400, { error: 'NTIS_API_KEY/apprvKey, pjtId 필요' });
       const params = new URLSearchParams({ apprvKey: serverKey, pjtId });
       if (collection) params.set('collection', collection);
@@ -497,7 +498,7 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-server.listen(PORT, '0.0.0.0', () => {
+server.listen(PORT, '127.0.0.1', () => {
   // 인트라넷 IP 목록 출력
   const os = require('os');
   const nets = os.networkInterfaces();

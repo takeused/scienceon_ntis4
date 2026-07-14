@@ -1,17 +1,22 @@
-name: Deploy to Cloudflare Workers
+name: Deploy Cloudflare edge gateway
 
 on:
   push:
     branches:
-      - master
+      - main
     paths:
-      - 'worker.js'
-      - 'wrangler.toml'
+      - 'cloudflare/**'
+      - '.github/workflows/deploy.yml'
+
+  workflow_dispatch:
 
 jobs:
   deploy:
+    if: vars.ORIGIN_API_BASE != ''
     runs-on: ubuntu-latest
-    name: Deploy Worker
+    name: Deploy edge gateway
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
 
@@ -20,3 +25,11 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: cloudflare
+          command: deploy --var ORIGIN_API_BASE:${{ vars.ORIGIN_API_BASE }}
+          secrets: |
+            ORIGIN_ACCESS_CLIENT_ID
+            ORIGIN_ACCESS_CLIENT_SECRET
+        env:
+          ORIGIN_ACCESS_CLIENT_ID: ${{ secrets.ORIGIN_ACCESS_CLIENT_ID }}
+          ORIGIN_ACCESS_CLIENT_SECRET: ${{ secrets.ORIGIN_ACCESS_CLIENT_SECRET }}

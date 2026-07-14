@@ -38,6 +38,7 @@ function createBrowserContext() {
     localStorage: { getItem() { return null; }, setItem() {}, removeItem() {} },
     window: {
       location: { protocol: 'http:', hostname: 'localhost', port: '3737' },
+      __SCIENCEON_BROWSER_API_MODE__: true,
       addEventListener() {},
     },
     AbortController: class AbortController {

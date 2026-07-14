@@ -725,11 +725,17 @@
           const accounts = encryptNTISAccounts(apiKey, macAddr);
           if (!accounts) return;
           url = `${TOKEN_URL_DIRECT}?accounts=${encodeURIComponent(accounts)}&client_id=${encodeURIComponent(clientId)}`;
-        } else if (BROWSER_API_MODE && ACTIVE_PROXY === 'worker') {
-          if (!clientId || !apiKey || !macAddr) return;
-          const accounts = encryptNTISAccounts(apiKey, macAddr);
-          if (!accounts) return;
-          url = `${getProxyBase()}/token?accounts=${encodeURIComponent(accounts)}&client_id=${encodeURIComponent(clientId)}`;
+        } else if (ACTIVE_PROXY === 'worker') {
+          // A public Worker must not receive credentials stored in the browser.
+          // The PC proxy issues tokens using its registered .env identity.
+          if (BROWSER_API_MODE) {
+            if (!clientId || !apiKey || !macAddr) return;
+            const accounts = encryptNTISAccounts(apiKey, macAddr);
+            if (!accounts) return;
+            url = `${getProxyBase()}/token?accounts=${encodeURIComponent(accounts)}&client_id=${encodeURIComponent(clientId)}`;
+          } else {
+            url = `${getProxyBase()}/token`;
+          }
         } else {
           // 로컬 프록시: 서버가 등록(REGISTERED) 자격증명으로 발급하므로
           // 브라우저에 api_key/mac_address가 없어도 토큰이 발급된다.
@@ -795,7 +801,11 @@
         if (PROXY_AVAILABLE) {
           // ── 방법 1: 프록시 서버 사용
           let url;
-          if (ACTIVE_PROXY === 'worker') {
+          if (ACTIVE_PROXY === 'worker' && !BROWSER_API_MODE) {
+            // The registered PC proxy supplies the credentials; keep them out
+            // of public Worker request URLs.
+            url = `${getProxyBase()}/token`;
+          } else if (ACTIVE_PROXY === 'worker') {
             // Worker는 암호화된 accounts 파라미터를 기대함
             const accounts = encryptNTISAccounts(apiKey, macAddr);
             if (!accounts) throw new Error('CryptoJS 로드 실패 (암호화 불가)');

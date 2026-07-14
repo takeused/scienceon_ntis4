@@ -146,6 +146,14 @@
         } catch { /* Worker 접근 실패 */ }
       }
 
+      // The production UI and edge gateway share one Access-protected origin.
+      // Some managed browsers block readiness probes while allowing the actual
+      // API routes, so retain the Worker API path instead of falling back to
+      // browser-direct credentials.
+      if (!IS_LOCAL_HOST && CF_WORKER_BASE === window.location.origin) {
+        ACTIVE_PROXY = 'worker'; updateProxyStatus(); return;
+      }
+
       ACTIVE_PROXY = 'direct';
       STATE.aiConfigured = false;
       STATE.scienceOnConfigured = false;

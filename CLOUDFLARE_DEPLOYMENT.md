@@ -20,8 +20,8 @@ The proxy rejects API requests without `X-Origin-Token`; this header is added on
 ## 2. Cloudflare Worker configuration
 
 1. In **Workers & Pages > scienceon-ntis4 > Settings > Builds**, use production branch `main`, root directory `/`, no build command, and deploy command `npx wrangler deploy --config wrangler.toml --keep-vars`.
-2. In **Settings > Variables and Secrets**, set text variable `ORIGIN_API_BASE` to the current `https://*.trycloudflare.com` URL from step 1.
-3. Add secret `ORIGIN_SHARED_SECRET` with exactly the value in the PC `.env` file.
+2. In the **top Variables and Secrets** section of **Settings** (not **Builds > Variables and Secrets**), set text variable `ORIGIN_API_BASE` to the current `https://*.trycloudflare.com` URL from step 1.
+3. In that same top section, add secret `ORIGIN_SHARED_SECRET` with exactly the value in the PC `.env` file.
 4. In **Settings > Domains & Routes**, enable `workers.dev` and choose **Enable Cloudflare Access**. Limit the policy to the intended user emails.
 
 The public address is `https://scienceon-ntis4.takeused.workers.dev/`. Cloudflare Access must remain enabled; the Worker rejects API requests without its Access assertion.

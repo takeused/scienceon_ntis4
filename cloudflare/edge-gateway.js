@@ -46,11 +46,9 @@ export default {
       return json(404, { error: 'Not found' });
     }
 
-    // This Worker is protected by Cloudflare Access on its workers.dev route.
-    // Do not remove this check when using the free public deployment path.
-    if (!request.headers.get('Cf-Access-Jwt-Assertion')) {
-      return json(401, { error: 'Cloudflare Access authentication required' });
-    }
+    // Cloudflare Access protects the workers.dev route before this Worker runs.
+    // Do not change the route back to public: the local proxy accepts requests
+    // only from this Worker through ORIGIN_SHARED_SECRET.
 
     if (!env.ORIGIN_API_BASE || !env.ORIGIN_SHARED_SECRET) {
       return json(503, { error: 'Edge gateway is not configured' });

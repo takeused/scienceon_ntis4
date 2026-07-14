@@ -1,7 +1,0 @@
-name = "scienceon-edge-gateway"
-main = "edge-gateway.js"
-compatibility_date = "2026-07-14"
-workers_dev = false
-
-# ORIGIN_API_BASE is supplied by the GitHub Actions repository variable.
-# The service-token values are supplied as Worker secrets by the workflow.

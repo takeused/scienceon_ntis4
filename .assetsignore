@@ -1,0 +1,16 @@
+.git/
+.github/
+.wrangler/
+.env
+.env.*
+api/
+cloudflare/
+tests/
+tools/
+analysis-history/
+proxy-server.js
+vercel.json
+*.md
+*.json
+*.bat
+*.vbs

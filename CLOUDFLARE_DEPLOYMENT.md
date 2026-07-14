@@ -2,7 +2,7 @@
 
 ## Architecture
 
-`Cloudflare Pages (app hostname) -> Access-protected Worker routes -> Access service token -> Tunnel -> 127.0.0.1:3737 proxy -> ScienceON/NTIS`
+`Cloudflare Worker static assets (app hostname) -> Access-protected Worker API routes -> Access service token -> Tunnel -> 127.0.0.1:3737 proxy -> ScienceON/NTIS`
 
 The public UI and its API use the same `app` hostname. The proxy hostname is separate and accepts only the Worker service token. Do not expose port 3737 through a firewall rule or router port forwarding.
 
@@ -20,14 +20,14 @@ The public UI and its API use the same `app` hostname. The proxy hostname is sep
 3. Set `workers_dev = false` as included in the Worker configuration so the custom app hostname cannot be bypassed through a `workers.dev` URL.
 4. Configure Cloudflare WAF/rate limiting on the Worker routes. Begin with a conservative per-user policy and tune after observing normal search traffic.
 
-## 3. Connect GitHub to Cloudflare
+## 3. Connect GitHub to Cloudflare Workers Builds
 
-1. In Cloudflare Pages, create a project by connecting this GitHub repository. Use production branch `main`, no build command, and output directory `/`.
-2. Connect the Pages project to `app.<domain>`. Cloudflare Pages now automatically deploys the static UI on each GitHub push to `main`.
-3. In this repository's GitHub **Settings > Secrets and variables > Actions**, add these secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `ORIGIN_ACCESS_CLIENT_ID`, and `ORIGIN_ACCESS_CLIENT_SECRET`.
-4. Add GitHub Actions repository variable `ORIGIN_API_BASE` with `https://origin-api.<domain>`.
-5. The tracked `.github/workflows/deploy.yml` deploys `cloudflare/edge-gateway.js` whenever `main` changes under `cloudflare/`. It skips safely until `ORIGIN_API_BASE` is configured.
-6. In Cloudflare Workers, create routes from `app.<domain>/api*`, `/cerebras`, `/health`, `/ntis*`, and `/token*` to `scienceon-edge-gateway`. Pages continues to serve every other route.
+1. In Cloudflare Workers > `scienceon-ntis4` > **Settings > Builds**, set the production branch to `main`. Do not use the repository's old `master` branch or the auto-generated `cloudflare/workers-autoconfig` branch.
+2. Set Root directory to `/`, leave Build command empty, and set Deploy command to `npx wrangler deploy --config wrangler.toml`.
+3. Add Worker Build plain-text variable `ORIGIN_API_BASE` with `https://origin-api.<domain>`.
+4. Add Worker Build secrets `ORIGIN_ACCESS_CLIENT_ID` and `ORIGIN_ACCESS_CLIENT_SECRET` using the Access service token created in step 2.
+5. Connect a custom domain `app.<domain>` to this Worker, then apply the Access policy to that hostname. The checked-in `wrangler.toml` disables `workers.dev` and preview URLs so the custom Access-protected hostname is the only public entry point.
+6. The root `.assetsignore` prevents repository metadata, source-only server code, configuration, test files, and `.env` files from being uploaded as public static assets. The Worker serves only `index.html`, `css/`, `js/`, and `vendor/` while forwarding the listed API paths to the Tunnel.
 
 ## 4. Verify before enabling users
 

@@ -46,13 +46,13 @@ export default {
       return json(404, { error: 'Not found' });
     }
 
-    // The Worker must be protected by a Cloudflare Access application. Keeping
-    // workers.dev disabled prevents bypassing that Access policy.
+    // This Worker is protected by Cloudflare Access on its workers.dev route.
+    // Do not remove this check when using the free public deployment path.
     if (!request.headers.get('Cf-Access-Jwt-Assertion')) {
       return json(401, { error: 'Cloudflare Access authentication required' });
     }
 
-    if (!env.ORIGIN_API_BASE || !env.ORIGIN_ACCESS_CLIENT_ID || !env.ORIGIN_ACCESS_CLIENT_SECRET) {
+    if (!env.ORIGIN_API_BASE || !env.ORIGIN_SHARED_SECRET) {
       return json(503, { error: 'Edge gateway is not configured' });
     }
 
@@ -61,10 +61,9 @@ export default {
       const value = request.headers.get(name);
       if (value) headers.set(name, value);
     }
-    // These credentials authenticate this Worker to the separate Access policy
-    // that protects the Tunnel hostname. They are Worker secrets, never browser values.
-    headers.set('CF-Access-Client-ID', env.ORIGIN_ACCESS_CLIENT_ID);
-    headers.set('CF-Access-Client-Secret', env.ORIGIN_ACCESS_CLIENT_SECRET);
+    // Quick Tunnels have no Access policy of their own. This secret is checked
+    // by the local proxy, so only this Worker can use the temporary tunnel URL.
+    headers.set('X-Origin-Token', env.ORIGIN_SHARED_SECRET);
     headers.set('X-Request-Source', 'scienceon-edge-gateway');
 
     let upstream;

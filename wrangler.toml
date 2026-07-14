@@ -1,7 +1,7 @@
 name = "scienceon-ntis4"
 main = "cloudflare/edge-gateway.js"
 compatibility_date = "2026-07-14"
-workers_dev = false
+workers_dev = true
 preview_urls = false
 
 [assets]

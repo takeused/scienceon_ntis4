@@ -43,6 +43,24 @@ const PORT      = Number(process.env.PORT || 3737);
 const API_HOST  = 'apigateway.kisti.re.kr';
 const NTIS_HOST = 'www.ntis.go.kr';
 const FIXED_IV  = 'jvHJ1EFA0IXBrxxz';
+const ORIGIN_SHARED_SECRET = process.env.ORIGIN_SHARED_SECRET || '';
+
+function requiresOriginToken(pathname) {
+  return pathname === '/health'
+    || pathname === '/cerebras'
+    || pathname === '/api'
+    || pathname.startsWith('/api/')
+    || pathname === '/ntis'
+    || pathname.startsWith('/ntis/')
+    || pathname === '/token'
+    || pathname.startsWith('/token/');
+}
+
+function hasValidOriginToken(req) {
+  const supplied = String(req.headers['x-origin-token'] || '');
+  if (!ORIGIN_SHARED_SECRET || supplied.length !== ORIGIN_SHARED_SECRET.length) return false;
+  return crypto.timingSafeEqual(Buffer.from(supplied), Buffer.from(ORIGIN_SHARED_SECRET));
+}
 
 // ── .env 로더 (의존성 없이 KEY=VALUE 파싱, 소스에 비밀값을 넣지 않기 위함) ──
 // 프로젝트 폴더의 .env 파일을 읽어 아직 설정되지 않은 환경변수만 주입한다.
@@ -311,6 +329,13 @@ const server = http.createServer(async (req, res) => {
                && !pathname.startsWith('/ntis') && !pathname.startsWith('/health')
                && !pathname.startsWith('/myip')) {
     return serveStatic(req, res, pathname);
+  }
+
+  // A Quick Tunnel URL is public but not an authenticated origin. Require a
+  // shared secret on every API route before this PC can use its registered
+  // ScienceON/NTIS credentials.
+  if (ORIGIN_SHARED_SECRET && requiresOriginToken(pathname) && !hasValidOriginToken(req)) {
+    return sendJSON(res, 401, { error: 'Origin authentication required' });
   }
 
   console.log(`[${new Date().toISOString()}] ${req.method} ${pathname}`);

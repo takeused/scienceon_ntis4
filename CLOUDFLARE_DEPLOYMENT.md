@@ -31,7 +31,7 @@ The public address is `https://scienceon-ntis4.takeused.workers.dev/`. Cloudflar
 1. Restart the proxy, then `tools\start-quick-tunnel.bat`.
 2. Copy the newly displayed Quick Tunnel URL.
 3. Replace `ORIGIN_API_BASE` in the Worker settings with that URL.
-4. Test `/health` after signing in through Cloudflare Access, then perform one ScienceON and one NTIS search externally.
+4. Test `/_edge/ready` after signing in through Cloudflare Access, then perform one ScienceON and one NTIS search externally.
 
 ## Operational notes
 

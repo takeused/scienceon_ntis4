@@ -1,7 +1,7 @@
 const ALLOWED_PATHS = new Set([
   '/api',
   '/cerebras',
-  '/health',
+  '/_edge/ready',
   '/ntis',
   '/ntis/connection',
   '/ntis/related',

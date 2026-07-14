@@ -46,7 +46,7 @@ const FIXED_IV  = 'jvHJ1EFA0IXBrxxz';
 const ORIGIN_SHARED_SECRET = process.env.ORIGIN_SHARED_SECRET || '';
 
 function requiresOriginToken(pathname) {
-  return pathname === '/health'
+  return pathname === '/_edge/ready'
     || pathname === '/cerebras'
     || pathname === '/api'
     || pathname.startsWith('/api/')
@@ -326,7 +326,7 @@ const server = http.createServer(async (req, res) => {
   const staticExts = ['.html', '.js', '.css', '.ico', '.png', '.jpg', '.svg', '.md'];
   const isStatic   = pathname === '/' || staticExts.some(e => pathname.endsWith(e));
   if (isStatic && !pathname.startsWith('/token') && !pathname.startsWith('/api')
-               && !pathname.startsWith('/ntis') && !pathname.startsWith('/health')
+               && !pathname.startsWith('/ntis') && !pathname.startsWith('/_edge/ready')
                && !pathname.startsWith('/myip')) {
     return serveStatic(req, res, pathname);
   }
@@ -341,8 +341,8 @@ const server = http.createServer(async (req, res) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${pathname}`);
 
   try {
-    // ── /health
-    if (pathname === '/health') {
+    // ── /_edge/ready
+    if (pathname === '/_edge/ready') {
       return sendJSON(res, 200, {
         status: 'ok',
         service: 'ScienceON Local Proxy',
@@ -538,7 +538,7 @@ server.listen(PORT, '127.0.0.1', () => {
   ips.forEach(ip => console.log(`   인트라넷:  http://${ip}:${PORT}  ← 같은 네트워크 PC에서 이 주소로 접속`));
   console.log(`\n   📂 정적 파일 서빙: http://<IP>:${PORT}/  → index.html 직접 제공`);
   console.log(`   🔔 NTIS 승인 IP: 1.252.84.41 (정박사님 PC)`);
-  console.log(`   API: /health  /token  /api  /ntis  /ntis/connection\n`);
+  console.log(`   API: /_edge/ready  /token  /api  /ntis  /ntis/connection\n`);
 });
 
 server.on('error', (err) => {

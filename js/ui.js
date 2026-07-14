@@ -110,7 +110,7 @@
     async function checkProxy() {
       // 1순위: 로컬 프록시
       try {
-        const res = await fetch(`${PROXY_BASE}/health`, { signal: AbortSignal.timeout(1500) });
+        const res = await fetch(`${PROXY_BASE}/_edge/ready`, { signal: AbortSignal.timeout(1500) });
         if (res.ok) {
           const data = await res.json().catch(() => ({}));
           STATE.aiConfigured = data.aiConfigured === true;
@@ -122,7 +122,7 @@
 
       // 2순위: Vercel Serverless (Seoul icn1 고정 리전 — NTIS IP 화이트리스트 등록 가능)
       try {
-        const res = await fetch(`${VERCEL_BASE}/health`, { signal: AbortSignal.timeout(5000) });
+        const res = await fetch(`${VERCEL_BASE}/_edge/ready`, { signal: AbortSignal.timeout(5000) });
         if (res.ok) {
           const data = await res.json().catch(() => ({}));
           STATE.aiConfigured = data.aiConfigured === true;
@@ -135,7 +135,7 @@
       // 3순위: Cloudflare Worker (NTIS IP 차단될 수 있음)
       if (CF_WORKER_BASE) {
         try {
-          const res = await fetch(`${CF_WORKER_BASE}/health`, { signal: AbortSignal.timeout(4000) });
+          const res = await fetch(`${CF_WORKER_BASE}/_edge/ready`, { signal: AbortSignal.timeout(4000) });
           if (res.ok) {
             const data = await res.json().catch(() => ({}));
             STATE.aiConfigured = data.aiConfigured === true;

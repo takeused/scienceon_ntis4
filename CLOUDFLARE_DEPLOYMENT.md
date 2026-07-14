@@ -23,9 +23,9 @@ The public UI and its API use the same `app` hostname. The proxy hostname is sep
 ## 3. Connect GitHub to Cloudflare Workers Builds
 
 1. In Cloudflare Workers > `scienceon-ntis4` > **Settings > Builds**, set the production branch to `main`. Do not use the repository's old `master` branch or the auto-generated `cloudflare/workers-autoconfig` branch.
-2. Set Root directory to `/`, leave Build command empty, and set Deploy command to `npx wrangler deploy --config wrangler.toml`.
-3. Add Worker Build plain-text variable `ORIGIN_API_BASE` with `https://origin-api.<domain>`.
-4. Add Worker Build secrets `ORIGIN_ACCESS_CLIENT_ID` and `ORIGIN_ACCESS_CLIENT_SECRET` using the Access service token created in step 2.
+2. Set Root directory to `/`, leave Build command empty, and set Deploy command to `npx wrangler deploy --config wrangler.toml --keep-vars`.
+3. In the Worker's **Settings > Variables and Secrets**, add text variable `ORIGIN_API_BASE` with `https://origin-api.<domain>`.
+4. In the same **Variables and Secrets** screen, add secrets `ORIGIN_ACCESS_CLIENT_ID` and `ORIGIN_ACCESS_CLIENT_SECRET` using the Access service token created in step 2. `--keep-vars` is required so Git-based deployments preserve these dashboard-managed runtime values.
 5. Connect a custom domain `app.<domain>` to this Worker, then apply the Access policy to that hostname. The checked-in `wrangler.toml` disables `workers.dev` and preview URLs so the custom Access-protected hostname is the only public entry point.
 6. The root `.assetsignore` prevents repository metadata, source-only server code, configuration, test files, and `.env` files from being uploaded as public static assets. The Worker serves only `index.html`, `css/`, `js/`, and `vendor/` while forwarding the listed API paths to the Tunnel.
 
